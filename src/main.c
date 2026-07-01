@@ -70,6 +70,9 @@ int main(int argc, char **argv)
     pthread_t player_thread;
     player_thread_run(&p);
 
+    uint64_t playback_start = SDL_GetPerformanceCounter();
+    double freq = (double)SDL_GetPerformanceFrequency();
+
     unsigned int y_tex = get_y_tex();
     unsigned int u_tex = get_u_tex();
     unsigned int v_tex = get_v_tex();
@@ -86,21 +89,29 @@ int main(int argc, char **argv)
             }
         }
 
-        glClearColor(0.1, 0.3, 0.3, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        AVFrame* f = frame_queue_try_pop(&fq);
+        double elapsed = (double)(SDL_GetPerformanceCounter() - playback_start) / freq;
+        
+        static AVFrame* f = NULL;
+        if (f == NULL)
+        {
+            f = frame_queue_try_pop(&fq);
+        }
         
         if (f != NULL)
         {
-            upload_texture_r8(y_tex, f->data[0], f->width, f->height, f->linesize[0]);
-            upload_texture_r8(u_tex, f->data[1], f->width / 2, f->height / 2, f->linesize[1]);
-            upload_texture_r8(v_tex, f->data[2], f->width / 2, f->height / 2, f->linesize[2]);
-        }
-        
-        av_frame_free(&f);
+            double pts = f->best_effort_timestamp * p.video_timebase;
 
-        video_renderer_draw();
+            if (pts <= elapsed)
+            {
+                glClearColor(0.0, 0.0, 0.0, 1.0);
+                glClear(GL_COLOR_BUFFER_BIT);
+                upload_texture_r8(y_tex, f->data[0], f->width, f->height, f->linesize[0]);
+                upload_texture_r8(u_tex, f->data[1], f->width / 2, f->height / 2, f->linesize[1]);
+                upload_texture_r8(v_tex, f->data[2], f->width / 2, f->height / 2, f->linesize[2]);
+                video_renderer_draw();
+                av_frame_free(&f);
+            }
+        }
         SDL_GL_SwapWindow(window);
     }
 

@@ -86,6 +86,9 @@ void player_init(Player *player, Frame_Queue* queue, const char* url) {
 
     player->audio_frame = av_frame_alloc();
     player->resampled_frame = av_frame_alloc();
+
+    player->video_timebase = av_q2d(player->format_context->streams[player->video_stream_idx]->time_base);
+    player->audio_timebase = av_q2d(player->format_context->streams[player->audio_stream_idx]->time_base);
 }
 
 void player_destroy(Player* p) {
