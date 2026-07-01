@@ -30,10 +30,10 @@ unsigned int shader_program = 0;
 
 const float quad[] = {
  //Position        TexCoord
- -1.0f,-1.0f,      0.0f,0.0f,
-  1.0f,-1.0f,      1.0f,0.0f,
-  1.0f, 1.0f,      1.0f,1.0f,
- -1.0f, 1.0f,      0.0f,1.0f,
+ -1.0f,-1.0f,      0.0f,1.0f,
+  1.0f,-1.0f,      1.0f,1.0f,
+  1.0f, 1.0f,      1.0f,0.0f,
+ -1.0f, 1.0f,      0.0f,0.0f,
 };
 
 const char vetrex_src[] = 
