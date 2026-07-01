@@ -21,6 +21,7 @@ add_executable(filters
     src/main.c
     src/shader.c
     src/player.c
+    src/frame_queue.c
     src/texture.c
     src/video_renderer.c
 )
