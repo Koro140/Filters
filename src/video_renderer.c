@@ -112,9 +112,9 @@ void video_renderer_draw(void)
 {
     shader_use(shader_program);
 
-    glUniform1i(glGetUniformLocation(shader_program, "texY"), 0);
-    glUniform1i(glGetUniformLocation(shader_program, "texU"), 1);
-    glUniform1i(glGetUniformLocation(shader_program, "texV"), 2);
+    shader_set_integer(shader_program, "texY", 0);
+    shader_set_integer(shader_program, "texU", 1);
+    shader_set_integer(shader_program, "texV", 2);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, y_tex);

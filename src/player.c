@@ -103,7 +103,6 @@ void player_destroy(Player* p) {
     avcodec_free_context(&p->audio_decoder);
 
     avformat_close_input(&p->format_context);
-    avformat_free_context(p->format_context);
 }
 
 static void player_update(Player* p) {
