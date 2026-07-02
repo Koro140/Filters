@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     Player p = {0};
     player_init(&p, &fq,"/home/koro/Assets/video.mp4");
     if (p.video_decoder == NULL || p.video_decoder->pix_fmt != AV_PIX_FMT_YUV420P) {
-        fprintf(stderr, "Unsupported pixel format for display\n");
+        fprintf(stderr, "ERROR::VIDEO::Unsupported pixel format for display\n");
         player_destroy(&p);
         frame_queue_destroy(&fq);
         SDL_GL_DestroyContext(sdl_gl_context);
@@ -78,12 +78,9 @@ int main(int argc, char **argv)
     unsigned int v_tex = get_v_tex();
     
     AVFrame* f = NULL;
-    while (appRunning)
-    {
-        while (SDL_PollEvent(&e))
-        {
-            switch (e.type)
-            {
+    while (appRunning) {
+        while (SDL_PollEvent(&e)) {
+            switch (e.type) {
             case SDL_EVENT_QUIT:
                 appRunning = false;
                 break;
@@ -92,23 +89,15 @@ int main(int argc, char **argv)
 
         double elapsed = (double)(SDL_GetPerformanceCounter() - playback_start) / freq;
         
-        if (f == NULL)
-        {
+        if (f == NULL) {
             f = frame_queue_try_pop(&fq);
         }
         
-        if (f != NULL)
-        {
+        if (f != NULL) {
             double pts = f->best_effort_timestamp * p.video_timebase;
 
-            if (pts <= elapsed)
-            {
-                glClearColor(0.0, 0.0, 0.0, 1.0);
-                glClear(GL_COLOR_BUFFER_BIT);
-                upload_texture_r8(y_tex, f->data[0], f->width, f->height, f->linesize[0]);
-                upload_texture_r8(u_tex, f->data[1], f->width / 2, f->height / 2, f->linesize[1]);
-                upload_texture_r8(v_tex, f->data[2], f->width / 2, f->height / 2, f->linesize[2]);
-                video_renderer_draw();
+            if (pts <= elapsed) {
+                video_renderer_draw(f);
                 av_frame_free(&f);
             }
         }
@@ -116,8 +105,7 @@ int main(int argc, char **argv)
     }
 
     player_thread_stop(&p);
-    if (f != NULL)
-    {
+    if (f != NULL) {
         av_frame_free(&f);
     }
     

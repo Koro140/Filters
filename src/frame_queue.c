@@ -39,8 +39,6 @@ void frame_queue_push(Frame_Queue *fq, AVFrame *frame)
 {
     pthread_mutex_lock(&fq->mutex);
 
-    // FIX: also wake up (and bail) if the queue has been aborted,
-    // otherwise a full queue + no consumer = permanent sleep here.
     while (fq->count == FRAME_QUEUE_COUNT && !atomic_load(&fq->aborted))
         pthread_cond_wait(&fq->not_full, &fq->mutex);
 
@@ -78,8 +76,6 @@ AVFrame *frame_queue_try_pop(Frame_Queue *fq)
     return frame;
 }
 
-// NEW: wake any thread blocked in frame_queue_push so it can observe
-// shutdown and return instead of sleeping forever.
 void frame_queue_abort(Frame_Queue *fq)
 {
     pthread_mutex_lock(&fq->mutex);

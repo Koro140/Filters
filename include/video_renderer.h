@@ -9,4 +9,4 @@ unsigned int get_v_tex();
 void video_renderer_init(int width, int height);
 void video_renderer_destroy();
 
-void video_renderer_draw(void);
+void video_renderer_draw(AVFrame* frame);

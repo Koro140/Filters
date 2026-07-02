@@ -108,8 +108,18 @@ void video_renderer_destroy() {
     glDeleteVertexArrays(1, &vao);
 }
 
-void video_renderer_draw(void)
+void video_renderer_draw(AVFrame* frame)
 {
+    // Upload texture 
+    upload_texture_r8(y_tex, frame->data[0], frame->width, frame->height, frame->linesize[0]);
+    upload_texture_r8(u_tex, frame->data[1], frame->width / 2, frame->height / 2, frame->linesize[1]);
+    upload_texture_r8(v_tex, frame->data[2], frame->width / 2, frame->height / 2, frame->linesize[2]);
+
+    // Clear background
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    // Draw the texture using the shader
     shader_use(shader_program);
 
     shader_set_integer(shader_program, "texY", 0);
