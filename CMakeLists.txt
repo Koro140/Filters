@@ -4,11 +4,10 @@ project(filters C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-
-
 add_library(glad vendor/glad/src/glad.c)
 target_include_directories(glad PUBLIC vendor/glad/include)
 find_package(SDL3 REQUIRED)
+add_subdirectory(vendor/cglm)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(AVFORMAT REQUIRED IMPORTED_TARGET libavformat)
@@ -31,6 +30,7 @@ target_include_directories(filters PRIVATE
 )
 
 target_link_libraries(filters PRIVATE
+    cglm
     SDL3::SDL3
     glad
     PkgConfig::AVFORMAT

@@ -67,3 +67,33 @@ void shader_use(unsigned int shader)
 {
     glUseProgram(shader);
 }
+
+void shader_set_float(unsigned int shader, const char *name, float value)
+{
+    glUniform1f(glGetUniformLocation(shader, name),value);
+}
+
+void shader_set_integer(unsigned int shader, const char *name, int value)
+{
+    glUniform1i(glGetUniformLocation(shader, name), value);
+}
+
+void shader_set_vector2f(unsigned int shader, const char *name, const vec2s value)
+{
+    glUniform2f(glGetUniformLocation(shader, name), value.x, value.y);
+}
+
+void shader_set_vector3f(unsigned int shader, const char *name, const vec3s value)
+{
+    glUniform3f(glGetUniformLocation(shader, name), value.x, value.y, value.z);
+}
+
+void shader_set_vector4f(unsigned int shader, const char *name, const vec4s value)
+{
+    glUniform4f(glGetUniformLocation(shader, name), value.x, value.y, value.z, value.w);
+}
+
+void shader_set_matrix4(unsigned int shader, const char *name, const mat4s matrix)
+{
+    glUniformMatrix4fv(glGetUniformLocation(shader, name), 1, GL_FALSE, (const float *)matrix.raw);
+}
