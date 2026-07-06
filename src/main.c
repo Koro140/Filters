@@ -45,7 +45,7 @@ int main(int argc, char **argv)
         return 1;
     }
     SDL_GL_SetSwapInterval(1);
-    
+    glDisable(GL_BLEND);
     bool appRunning = true;
     SDL_Event e;
 
@@ -101,8 +101,8 @@ int main(int argc, char **argv)
         if (vid_frame != NULL) {
             double pts = vid_frame->best_effort_timestamp * p.video_timebase;
 
+            video_renderer_draw(vid_frame);
             if (pts <= elapsed) {
-                video_renderer_draw(vid_frame);
                 av_frame_free(&vid_frame);
             }
         }
