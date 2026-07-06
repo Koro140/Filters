@@ -6,8 +6,7 @@
 
 #include "player.h"
 #include "video_renderer.h"
-#include "texture.h"
-#include "shader.h"
+#include "audio_renderer.h"
 
 int main(int argc, char **argv)
 {
@@ -50,15 +49,19 @@ int main(int argc, char **argv)
     bool appRunning = true;
     SDL_Event e;
 
-    Frame_Queue fq;
-    frame_queue_init(&fq);
+    Frame_Queue video_frame_queue;
+    frame_queue_init(&video_frame_queue);
+
+    Frame_Queue audio_frame_queue;
+    frame_queue_init(&audio_frame_queue);
 
     Player p = {0};
-    player_init(&p, &fq,"/home/koro/Assets/video.mp4");
+    player_init(&p, &video_frame_queue, &audio_frame_queue, "/home/koro/Assets/video.mp4");
+
     if (p.video_decoder == NULL || p.video_decoder->pix_fmt != AV_PIX_FMT_YUV420P) {
         fprintf(stderr, "ERROR::VIDEO::Unsupported pixel format for display\n");
         player_destroy(&p);
-        frame_queue_destroy(&fq);
+        frame_queue_destroy(&video_frame_queue);
         SDL_GL_DestroyContext(sdl_gl_context);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -66,18 +69,16 @@ int main(int argc, char **argv)
     }
 
     video_renderer_init(p.video_decoder->width, p.video_decoder->height);
+    audio_renderer_init(p.audio_decoder->ch_layout.nb_channels, p.audio_decoder->sample_rate);
 
     pthread_t player_thread;
     player_thread_run(&p);
 
     uint64_t playback_start = SDL_GetPerformanceCounter();
     double freq = (double)SDL_GetPerformanceFrequency();
-
-    unsigned int y_tex = get_y_tex();
-    unsigned int u_tex = get_u_tex();
-    unsigned int v_tex = get_v_tex();
     
-    AVFrame* f = NULL;
+    AVFrame* vid_frame = NULL;
+    AVFrame* audio_frame = NULL;
     while (appRunning) {
         while (SDL_PollEvent(&e)) {
             switch (e.type) {
@@ -89,29 +90,44 @@ int main(int argc, char **argv)
 
         double elapsed = (double)(SDL_GetPerformanceCounter() - playback_start) / freq;
         
-        if (f == NULL) {
-            f = frame_queue_try_pop(&fq);
+        if (vid_frame == NULL) {
+            vid_frame = frame_queue_try_pop(&video_frame_queue);
         }
         
-        if (f != NULL) {
-            double pts = f->best_effort_timestamp * p.video_timebase;
+        if (audio_frame == NULL) {
+            audio_frame = frame_queue_try_pop(&audio_frame_queue);
+        }
+
+        if (vid_frame != NULL) {
+            double pts = vid_frame->best_effort_timestamp * p.video_timebase;
 
             if (pts <= elapsed) {
-                video_renderer_draw(f);
-                av_frame_free(&f);
+                video_renderer_draw(vid_frame);
+                av_frame_free(&vid_frame);
             }
         }
+
+        if (audio_frame != NULL) {
+            double pts = audio_frame->best_effort_timestamp * p.audio_timebase;
+
+            if (pts <= elapsed) {
+                audio_renderer_update(audio_frame);
+                av_frame_free(&audio_frame);
+            }
+        }
+
         SDL_GL_SwapWindow(window);
     }
 
     player_thread_stop(&p);
-    if (f != NULL) {
-        av_frame_free(&f);
+    if (vid_frame != NULL) {
+        av_frame_free(&vid_frame);
     }
     
     video_renderer_destroy();
+    audio_renderer_destroy();
     player_destroy(&p);
-    frame_queue_destroy(&fq);
+    frame_queue_destroy(&video_frame_queue);
     
     SDL_GL_DestroyContext(sdl_gl_context);
     SDL_DestroyWindow(window);

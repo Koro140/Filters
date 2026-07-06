@@ -20,7 +20,6 @@ typedef struct Player {
   AVCodecContext *video_decoder;
   AVFrame *frame;
   AVStream *video_stream;
-  struct SwsContext *sws;
   enum AVPixelFormat last_fmt;
 
   const AVCodec *audio_codec;
@@ -35,13 +34,14 @@ typedef struct Player {
   double video_timebase;
   double audio_timebase;
 
-  Frame_Queue *queue_referenece;
+  Frame_Queue *video_queue_referenece;
+  Frame_Queue *audio_queue_referenece;
   
   atomic_bool quit;
   pthread_t   thread;
 }Player;
 
-void player_init(Player *player, Frame_Queue* queue, const char *url);
+void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url);
 void player_destroy(Player *player);
 
 void player_thread_run(Player* p);

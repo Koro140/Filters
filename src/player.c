@@ -2,22 +2,32 @@
 
 #include <stdio.h>
 
+void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url);
+void player_destroy(Player* p);
+static void player_update(Player* p);
+static void player_handle_video_packet(Player* p);
+static void player_handle_audio_packet(Player* p);
+static void *player_thread(void* arg);
+void player_thread_run(Player* p);
+void player_thread_stop(Player* p);
+
 static void print_av_error(const char *context, int err) {
     char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
     av_strerror(err, errbuf, sizeof(errbuf));
     fprintf(stderr, "%s: %s\n", context, errbuf);
 }
 
-void player_init(Player *player, Frame_Queue* queue, const char* url) {
-    player->queue_referenece = queue;
+void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url) {
+    player->video_queue_referenece= video_queue;
+    player->audio_queue_referenece = audio_queue;
     player->format_context = NULL;
     player->packet = av_packet_alloc();
+    player->frame = av_frame_alloc();
+    player->audio_frame = av_frame_alloc();
     player->video_codec = NULL;
     player->audio_codec = NULL;
     player->video_decoder = NULL;
     player->audio_decoder = NULL;
-    player->frame = NULL;
-    player->audio_frame = NULL;
     player->resampled_frame = NULL;
     player->video_stream_idx = -1;
     player->audio_stream_idx = -1;
@@ -60,8 +70,6 @@ void player_init(Player *player, Frame_Queue* queue, const char* url) {
         }
     }
 
-    player->frame = av_frame_alloc();
-
     // Initializing audio stream/decoder
     player->audio_stream_idx = av_find_best_stream(
         player->format_context, AVMEDIA_TYPE_AUDIO, -1, -1,
@@ -84,11 +92,26 @@ void player_init(Player *player, Frame_Queue* queue, const char* url) {
         }
     }
 
-    player->audio_frame = av_frame_alloc();
-    player->resampled_frame = av_frame_alloc();
 
     player->video_timebase = av_q2d(player->format_context->streams[player->video_stream_idx]->time_base);
     player->audio_timebase = av_q2d(player->format_context->streams[player->audio_stream_idx]->time_base);
+
+    // Initializing SwrContext for audio
+    AVChannelLayout out_layout;
+    av_channel_layout_default(&out_layout, player->audio_decoder->ch_layout.nb_channels);
+    ret = swr_alloc_set_opts2(&player->swr,
+        &out_layout, 
+        AV_SAMPLE_FMT_S16, 
+        player->audio_decoder->sample_rate,
+        &player->audio_decoder->ch_layout,
+        player->audio_decoder->sample_fmt,
+        player->audio_decoder->sample_rate,
+
+        0,
+        NULL
+    );
+
+    swr_init(player->swr);
 }
 
 void player_destroy(Player* p) {
@@ -124,14 +147,26 @@ static void player_update(Player* p) {
 
     // Video packet
     if (p->packet->stream_index == p->video_stream_idx && p->video_decoder != NULL) {
-        ret = avcodec_send_packet(p->video_decoder, p->packet);
+        player_handle_video_packet(p);
+    }
+
+    // Audio packet
+    if (p->packet->stream_index == p->audio_stream_idx && p->audio_decoder != NULL) {
+        player_handle_audio_packet(p);
+    }
+
+    av_packet_unref(p->packet);
+}
+
+static void player_handle_video_packet(Player* p) {
+        int ret = avcodec_send_packet(p->video_decoder, p->packet);
         if (ret < 0) {
             print_av_error("avcodec_send_packet(video)", ret);
         } else {
             while ((ret = avcodec_receive_frame(p->video_decoder, p->frame)) == 0) {
                 AVFrame* copy = av_frame_clone(p->frame);
                 if (copy != NULL) {
-                    frame_queue_push(p->queue_referenece, copy);
+                    frame_queue_push(p->video_queue_referenece, copy);
                 }
                 av_frame_unref(p->frame);
             }
@@ -139,24 +174,41 @@ static void player_update(Player* p) {
                 print_av_error("avcodec_receive_frame(video)", ret);
             }
         }
-    }
+}
 
-    // Audio packet
-    if (p->packet->stream_index == p->audio_stream_idx && p->audio_decoder != NULL) {
-        ret = avcodec_send_packet(p->audio_decoder, p->packet);
-        if (ret < 0) {
-            print_av_error("avcodec_send_packet(audio)", ret);
-        } else {
-            while ((ret = avcodec_receive_frame(p->audio_decoder, p->audio_frame)) == 0) {
-                av_frame_unref(p->audio_frame);
-            }
-            if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-                print_av_error("avcodec_receive_frame(audio)", ret);
-            }
+void player_handle_audio_packet(Player* p) {
+    int ret = avcodec_send_packet(p->audio_decoder, p->packet);
+    if (ret < 0) {
+        print_av_error("avcodec_send_packet(audio)", ret);
+    } else {
+        while ((ret = avcodec_receive_frame(p->audio_decoder, p->audio_frame)) == 0) {
+            AVFrame *out = av_frame_alloc();
+
+            out->format = AV_SAMPLE_FMT_S16;
+            out->sample_rate = p->audio_frame->sample_rate;
+            out->ch_layout = p->audio_frame->ch_layout;
+            out->nb_samples = p->audio_frame->nb_samples;
+
+            out->pts = p->audio_frame->pts;
+            out->best_effort_timestamp = p->audio_frame->best_effort_timestamp;
+
+            av_frame_get_buffer(out, 0);
+
+            swr_convert(
+                p->swr,
+                out->data,
+                out->nb_samples,
+                (const uint8_t **)p->audio_frame->data,
+                p->audio_frame->nb_samples
+            );
+
+            av_frame_unref(p->audio_frame);
+            frame_queue_push(p->audio_queue_referenece, out);
+        }
+        if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
+            print_av_error("avcodec_receive_frame(audio)", ret);
         }
     }
-
-    av_packet_unref(p->packet);
 }
 
 static void *player_thread(void* arg) {
@@ -175,6 +227,7 @@ void player_thread_run(Player* p) {
 
 void player_thread_stop(Player* p) {
     atomic_store(&p->quit, true);
-    frame_queue_abort(p->queue_referenece);
+    frame_queue_abort(p->video_queue_referenece);
+    frame_queue_abort(p->audio_queue_referenece);
     pthread_join(p->thread, NULL);
 }

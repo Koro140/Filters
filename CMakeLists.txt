@@ -23,6 +23,7 @@ add_executable(filters
     src/frame_queue.c
     src/texture.c
     src/video_renderer.c
+    src/audio_renderer.c
 )
 
 target_include_directories(filters PRIVATE
