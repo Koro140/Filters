@@ -28,7 +28,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    SDL_Window *window = SDL_CreateWindow("Filters", 1280, 720, SDL_WINDOW_OPENGL);
+    SDL_Window *window = SDL_CreateWindow("Filters", 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (window == NULL) {
         fprintf(stderr, "ERROR::SDL::%s\n", SDL_GetError());
         SDL_Quit();
@@ -53,6 +53,8 @@ int main(int argc, char **argv)
     }
     SDL_GL_SetSwapInterval(1);
     glDisable(GL_BLEND);
+
+    glViewport(0,0, 1280, 720);
     bool appRunning = true;
     SDL_Event e;
 
@@ -75,7 +77,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    video_renderer_init(p.video_decoder->width, p.video_decoder->height);
+    video_renderer_init(&settings, p.video_decoder->width, p.video_decoder->height);
     audio_renderer_init(p.audio_decoder->ch_layout.nb_channels, p.audio_decoder->sample_rate);
 
     pthread_t player_thread;

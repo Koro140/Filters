@@ -3,7 +3,6 @@
 #include <dynamic_array.h>
 
 typedef enum FilterType{
-    FILTER_TYPE_NONE,
     FILTER_TYPE_VHS,
     FILTER_TYPE_BLACK_WHITE,
 }FilterType;

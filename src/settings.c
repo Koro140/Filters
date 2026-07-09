@@ -8,17 +8,6 @@
 
 #include "settings.h"
 
-typedef enum FilterType{
-    FILTER_TYPE_NONE,
-    FILTER_TYPE_VHS,
-    FILTER_TYPE_BLACK_WHITE,
-}FilterType;
-
-typedef struct Settings {
-    char* video_name;
-    Dynamic_Array filter_types_array;
-}Settings;
-
 void usage(FILE *stream)
 {
     fprintf(stream, "Usage: ./filters -V [VIDEO_NAME]\n");
@@ -60,16 +49,13 @@ void settings_get(Settings* settings, int argc, char** argv) {
     
     // Doing the filters type parsing
     for (size_t i = 0; i < filter_flag_list.count; i++) {
-        if (strcmp(filter_flag_list.items[i], "none") == 0) {
-            dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_NONE);
-        } else if (strcmp(filter_flag_list.items[i], "vhs") == 0) {
+        if (strcmp(filter_flag_list.items[i], "vhs") == 0) {
             dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_VHS);
         } else if (strcmp(filter_flag_list.items[i], "bnw") == 0) {
             dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_BLACK_WHITE);
         } else {
             fprintf(stderr, "Please provide a supported filter name after -F\n");
             fprintf(stderr, "Supported filters:\n");
-            fprintf(stderr, "\tnone --- No filters\n");
             fprintf(stderr, "\tvhs  --- Old VHS effect\n");
             fprintf(stderr, "\tbnw  --- Black and white filter\n");
         }
