@@ -93,6 +93,7 @@ const char to_screen_src[] = "#version 330 core\n"
 
 extern const char* black_white_shader_src;
 extern const char* vhs_shader_src;
+extern const char* blur_shader_src;
 
 void render_target_create(Render_Target* rt,int width, int height) {
     rt->width = width;
@@ -141,6 +142,9 @@ void video_renderer_init(Settings* settings, int width, int height) {
             break;    
         case FILTER_TYPE_BLACK_WHITE:
             filters_shaders[i] = shader_compile(vertex_src, black_white_shader_src, NULL);
+            break;
+        case FILTER_TYPE_BLUR:
+            filters_shaders[i] = shader_compile(vertex_src, blur_shader_src, NULL);
             break;
         }
     }

@@ -5,6 +5,7 @@
 typedef enum FilterType{
     FILTER_TYPE_VHS,
     FILTER_TYPE_BLACK_WHITE,
+    FILTER_TYPE_BLUR,
 }FilterType;
 
 typedef struct Settings {
