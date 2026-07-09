@@ -36,7 +36,7 @@ void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_qu
 
     int ret = avformat_open_input(&player->format_context, url, NULL, NULL);
     if (ret < 0) {
-        print_av_error("avformat_open_input", ret);
+        print_av_error("ERROR::FILE::Couldn't open file", ret);
         return;
     }
 

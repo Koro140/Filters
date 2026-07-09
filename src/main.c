@@ -4,17 +4,24 @@
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
 
+#include "settings.h"
 #include "player.h"
 #include "video_renderer.h"
 #include "audio_renderer.h"
 
 int main(int argc, char **argv)
 {
-    // if (argc != 2) {
-    //     fprintf(stderr, "Usage : ./filters -v [video_name]\n");
-    //     fprintf(stdout, "Use ./filters --help to learn more\n");
-    //     return 1;
-    // }
+    Settings settings = {0};
+    settings_get(&settings, argc, argv);
+
+    // temporary solution to check if exists .. modify the player_init later
+    FILE* f = fopen(settings.video_name, "r");
+    if (f == NULL) {
+        fprintf(stderr, "ERROR::FILE::Couldn't open file %s\n", settings.video_name);
+        return 1;
+    } else {
+        fclose(f);
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == false) {
         fprintf(stderr, "ERROR::SDL::Initialization failed ... %s\n", SDL_GetError());
@@ -56,7 +63,7 @@ int main(int argc, char **argv)
     frame_queue_init(&audio_frame_queue);
 
     Player p = {0};
-    player_init(&p, &video_frame_queue, &audio_frame_queue, "/home/koro/Assets/video.mp4");
+    player_init(&p, &video_frame_queue, &audio_frame_queue, settings.video_name);
 
     if (p.video_decoder == NULL || p.video_decoder->pix_fmt != AV_PIX_FMT_YUV420P) {
         fprintf(stderr, "ERROR::VIDEO::Unsupported pixel format for display\n");
@@ -120,16 +127,17 @@ int main(int argc, char **argv)
     }
 
     player_thread_stop(&p);
-    if (vid_frame != NULL) {
-        av_frame_free(&vid_frame);
-    }
+    if (vid_frame != NULL) { av_frame_free(&vid_frame); }
+    if (audio_frame != NULL) { av_frame_free(&audio_frame); }
     
     video_renderer_destroy();
     audio_renderer_destroy();
     player_destroy(&p);
     frame_queue_destroy(&video_frame_queue);
-    
+
     SDL_GL_DestroyContext(sdl_gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
+    settings_free(&settings);
 }

@@ -5,7 +5,7 @@ project(filters C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(glad vendor/glad/src/glad.c)
-target_include_directories(glad PUBLIC vendor/glad/include)
+target_include_directories(glad PUBLIC vendor/glad/include vendor/flag)
 find_package(SDL3 REQUIRED)
 add_subdirectory(vendor/cglm)
 find_package(PkgConfig REQUIRED)
@@ -24,6 +24,7 @@ add_executable(filters
     src/texture.c
     src/video_renderer.c
     src/audio_renderer.c
+    src/settings.c
 )
 
 target_include_directories(filters PRIVATE
