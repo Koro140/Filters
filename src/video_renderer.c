@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <glad/glad.h>
-#include <SDL3/SDL.h>
 
 #include "shader.h"
 #include "texture.h"
@@ -14,6 +13,8 @@ typedef struct Render_Target {
     int width;
     int height;
 }Render_Target;
+
+SDL_Window* window_reference = NULL;
 
 int vao = 0;
 int vbo = 0;
@@ -39,61 +40,16 @@ const float quad[] = {
  -1.0f, 1.0f,      0.0f,1.0f,
 };
 
-const char vertex_src[] = 
-                        "#version 330 core\n"
-                        "layout(location = 0) in vec2 aPos;\n"
-                        "layout(location = 1) in vec2 aTexCoord;\n"
-                        
-                        "out vec2 TexCoord;\n"
+// exter globals from filter.c
+extern const char* filter_vertex_src;
+extern const char* to_screen_vertex_src;
+extern const char* yuv_to_rgb_src;
 
-                        "void main()\n"
-                        "{\n"
-                        "    TexCoord = aTexCoord;\n"
-                        "    gl_Position = vec4(aPos, 0.0, 1.0);\n"
-                        "}\n";
-
-const char yuv_to_rgb_src[] = 
-                    "#version 330 core\n"
-                    "in vec2 TexCoord;\n"
-
-                    "out vec4 FragColor;\n"
-
-                    "uniform sampler2D texY;\n"
-                    "uniform sampler2D texU;\n"
-                    "uniform sampler2D texV;\n"
-
-                    "void main()\n"
-                    "{\n"
-                    "    vec2 uv = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
-                    "    float y = texture(texY, uv).r;\n"
-
-                    "    float u = texture(texU, uv).r - 0.5;\n"
-                    "    float v = texture(texV, uv).r - 0.5;\n"
-
-                    "    vec3 rgb;\n"
-
-                    "    rgb.r = y + 1.402 * v;\n"
-                    "    rgb.g = y - 0.344136 * u - 0.714136 * v;\n"
-                    "    rgb.b = y + 1.772 * u;\n"
-
-                    "    FragColor = vec4(rgb, 1.0);\n"
-                    "}\n";
-
-const char to_screen_src[] = "#version 330 core\n"
-"\n"
-"in vec2 TexCoord;\n"
-"out vec4 FragColor;\n"
-"\n"
-"uniform sampler2D screenTexture;\n"
-"\n"
-"void main()\n"
-"{\n"
-"    FragColor = texture(screenTexture, TexCoord);\n"
-"}\n";
-
-extern const char* black_white_shader_src;
-extern const char* vhs_shader_src;
-extern const char* blur_shader_src;
+// filters
+extern const char* to_screen_src;
+extern const char* black_white_src;
+extern const char* vhs_src;
+extern const char* blur_src;
 
 void render_target_create(Render_Target* rt,int width, int height) {
     rt->width = width;
@@ -124,9 +80,11 @@ void render_target_free(Render_Target* rt) {
 	glDeleteFramebuffers(1, &rt->framebuffer);
 }
 
-void video_renderer_init(Settings* settings, int width, int height) {
-    yuv_to_rgb_shader = shader_compile(vertex_src, yuv_to_rgb_src, NULL);
-    to_screen_shader = shader_compile(vertex_src, to_screen_src, NULL);
+void video_renderer_init(SDL_Window* window ,Settings* settings, int width, int height) {
+    window_reference = window;
+    
+    yuv_to_rgb_shader = shader_compile(filter_vertex_src, yuv_to_rgb_src, NULL);
+    to_screen_shader = shader_compile(to_screen_vertex_src, to_screen_src, NULL);
 
     filters_shaders = malloc(sizeof(unsigned int) * settings->filter_types_array.count);
     if (filters_shaders == NULL) {
@@ -138,13 +96,13 @@ void video_renderer_init(Settings* settings, int width, int height) {
     for (int i = 0; i < settings->filter_types_array.count; i++) {
         switch (((FilterType*)settings->filter_types_array.items)[i]) {
         case FILTER_TYPE_VHS:
-            filters_shaders[i] = shader_compile(vertex_src, vhs_shader_src, NULL);
+            filters_shaders[i] = shader_compile(filter_vertex_src, vhs_src, NULL);
             break;    
         case FILTER_TYPE_BLACK_WHITE:
-            filters_shaders[i] = shader_compile(vertex_src, black_white_shader_src, NULL);
+            filters_shaders[i] = shader_compile(filter_vertex_src, black_white_src, NULL);
             break;
         case FILTER_TYPE_BLUR:
-            filters_shaders[i] = shader_compile(vertex_src, blur_shader_src, NULL);
+            filters_shaders[i] = shader_compile(filter_vertex_src, blur_src, NULL);
             break;
         }
     }
@@ -251,10 +209,25 @@ void video_renderer_draw(AVFrame* frame)
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    int w, h;
+    SDL_GetWindowSize(window_reference, &w, &h);
+
+    float texAspect = (float)rt1.width / rt2.height;
+    float winAspect  = (float)w / h;
+
+    float scaleX = 1.0f, scaleY = 1.0f;
+    if (winAspect > texAspect) {
+        scaleX = texAspect / winAspect;
+    } else {
+        scaleY = winAspect / texAspect;
+    }
+    glViewport(0, 0, w, h);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, rt1_as_input ? rt1.texture : rt2.texture);
     shader_use(to_screen_shader);
     shader_set_integer(to_screen_shader, "screenTexture", 0);
+    shader_set_vector2f(to_screen_shader, "scale", (vec2s){scaleX, scaleY});
 
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

@@ -9,6 +9,12 @@
 #include "video_renderer.h"
 #include "audio_renderer.h"
 
+void window_resize_callback(SDL_Window* window) {
+    int w, h;
+    SDL_GetWindowSizeInPixels(window, &w, &h);
+    glViewport(0, 0, w, h);
+}
+
 int main(int argc, char **argv)
 {
     Settings settings = {0};
@@ -28,7 +34,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    SDL_Window *window = SDL_CreateWindow("Filters", 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    SDL_Window *window = SDL_CreateWindow("Filters", 1920, 1080, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (window == NULL) {
         fprintf(stderr, "ERROR::SDL::%s\n", SDL_GetError());
         SDL_Quit();
@@ -51,22 +57,24 @@ int main(int argc, char **argv)
         SDL_Quit();
         return 1;
     }
-    SDL_GL_SetSwapInterval(1);
-    glDisable(GL_BLEND);
 
-    glViewport(0,0, 1280, 720);
+    if (SDL_GL_SetSwapInterval(1) == false) {
+        fprintf(stderr, "ERROR::SDL_GL::Failed to enable vsync\n");
+    }
+    window_resize_callback(window);
+
     bool appRunning = true;
     SDL_Event e;
-
+    
     Frame_Queue video_frame_queue;
     frame_queue_init(&video_frame_queue);
-
+    
     Frame_Queue audio_frame_queue;
     frame_queue_init(&audio_frame_queue);
-
+    
     Player p = {0};
     player_init(&p, &video_frame_queue, &audio_frame_queue, settings.video_name);
-
+    
     if (p.video_decoder == NULL || p.video_decoder->pix_fmt != AV_PIX_FMT_YUV420P) {
         fprintf(stderr, "ERROR::VIDEO::Unsupported pixel format for display\n");
         player_destroy(&p);
@@ -76,8 +84,8 @@ int main(int argc, char **argv)
         SDL_Quit();
         return 1;
     }
-
-    video_renderer_init(&settings, p.video_decoder->width, p.video_decoder->height);
+    
+    video_renderer_init(window, &settings, p.video_decoder->width, p.video_decoder->height);
     audio_renderer_init(p.audio_decoder->ch_layout.nb_channels, p.audio_decoder->sample_rate);
 
     pthread_t player_thread;
@@ -93,6 +101,9 @@ int main(int argc, char **argv)
             switch (e.type) {
             case SDL_EVENT_QUIT:
                 appRunning = false;
+                break;
+            case SDL_EVENT_WINDOW_RESIZED:
+                window_resize_callback(window);
                 break;
             }
         }
