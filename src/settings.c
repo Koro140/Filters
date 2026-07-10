@@ -55,16 +55,17 @@ void settings_get(Settings* settings, int argc, char** argv) {
             dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_BLACK_WHITE);
         } else if (strcmp(filter_flag_list.items[i], "blur") == 0) {
             dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_BLUR);
+        } else if (strcmp(filter_flag_list.items[i], "glitch") == 0) {
+            dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_GLITCH);
         } else {
             fprintf(stderr, "Please provide a supported filter name after -F\n");
             fprintf(stderr, "Supported filters:\n");
-            fprintf(stderr, "\tvhs  --- Old VHS effect\n");
-            fprintf(stderr, "\tbnw  --- Black and white filter\n");
-            fprintf(stderr, "\tblur --- Blurry effect\n");
+            fprintf(stderr, "\tvhs    --- Old VHS effect\n");
+            fprintf(stderr, "\tbnw    --- Black and white filter\n");
+            fprintf(stderr, "\tblur   --- Blurry effect\n");
+            fprintf(stderr, "\tglitch --- Blurry effect\n");
         }
-
     }
-    
 }
 
 void settings_free(Settings* settings) {

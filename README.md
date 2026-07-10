@@ -30,7 +30,8 @@ and if you do
 then the vhs edges will be colored .. they will be b&w if applied in reverse order you get the idea
 
 ### Supported Filter
-- bnw  ----- black and white
-- vhs  ----- Old VHS effect
-- blur ----- Blurry effect
+- bnw    ----- black and white
+- vhs    ----- Old VHS effect
+- blur   ----- Blurry effect
+- glitch ----- Glitching effect
 hoping to add more ;)
