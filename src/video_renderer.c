@@ -32,6 +32,8 @@ int filter_shaders_count = 0;
 Render_Target rt1 = {0};
 Render_Target rt2 = {0};
 
+bool rt1_as_input = true;
+
 const float quad[] = {
  //Position        TexCoord
  -1.0f,-1.0f,      0.0f,0.0f,
@@ -169,8 +171,7 @@ void video_renderer_destroy() {
     vao = 0;
 }
 
-void video_renderer_draw(AVFrame* frame)
-{
+void video_renderer_process_frame(AVFrame* frame) {
     glBindFramebuffer(GL_FRAMEBUFFER, rt1.framebuffer);
         // Upload texture
         glViewport(0,0, rt1.width, rt1.height);
@@ -205,7 +206,7 @@ void video_renderer_draw(AVFrame* frame)
         glBindVertexArray(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    bool rt1_as_input = true;
+    rt1_as_input = true;
     vec2s resolution = {rt1.width, rt1.height};
     for (int i = 0; i < filter_shaders_count; i++) {
         glBindFramebuffer(GL_FRAMEBUFFER, rt1_as_input ? rt2.framebuffer : rt1.framebuffer);
@@ -227,7 +228,9 @@ void video_renderer_draw(AVFrame* frame)
         rt1_as_input = !rt1_as_input;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
+void video_renderer_present() {
     int w, h;
     SDL_GetWindowSize(window_reference, &w, &h);
 

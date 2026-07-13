@@ -123,22 +123,22 @@ void app_run() {
 
         if (vid_frame != NULL) {
             double pts = vid_frame->best_effort_timestamp * g_app.p.video_timebase;
-
-            video_renderer_draw(vid_frame);
             if (pts <= elapsed) {
+                video_renderer_process_frame(vid_frame);
                 av_frame_free(&vid_frame);
             }
         }
-
+        
         if (audio_frame != NULL) {
             double pts = audio_frame->best_effort_timestamp * g_app.p.audio_timebase;
-
+            
             if (pts <= elapsed) {
                 audio_renderer_update(audio_frame);
                 av_frame_free(&audio_frame);
             }
         }
-
+        
+        video_renderer_present();
         SDL_GL_SwapWindow(g_app.window);
     }
 

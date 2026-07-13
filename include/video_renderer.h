@@ -8,4 +8,6 @@
 void video_renderer_init(SDL_Window* window, Settings* settings,int width, int height);
 void video_renderer_destroy();
 
-void video_renderer_draw(AVFrame* frame);
+void video_renderer_process_frame(AVFrame *frame);
+
+void video_renderer_present();
