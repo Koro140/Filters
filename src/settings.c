@@ -8,11 +8,23 @@
 
 #include "settings.h"
 
+void supported_filters(FILE* stream) {
+    fprintf(stream, "Please provide a supported filter name after -F\n");
+    fprintf(stream, "Supported filters:\n");
+    fprintf(stream, "\tvhs    --- Old VHS effect\n");
+    fprintf(stream, "\tbnw    --- Black and white filter\n");
+    fprintf(stream, "\tblur   --- Blurry effect\n");
+    fprintf(stream, "\tglitch --- Blurry effect\n");
+}
+
 void usage(FILE *stream)
 {
     fprintf(stream, "Usage: ./filters -V [VIDEO_NAME]\n");
+    fprintf(stream, "Usage: ./filters -V [VIDEO_NAME] -F [FILTER] -F [FILTER] .....\n");
     fprintf(stream, "OPTIONS:\n");
     flag_print_options(stream);
+
+    supported_filters(stream);
 }
 
 void settings_get(Settings* settings, int argc, char** argv) {
@@ -58,12 +70,8 @@ void settings_get(Settings* settings, int argc, char** argv) {
         } else if (strcmp(filter_flag_list.items[i], "glitch") == 0) {
             dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_GLITCH);
         } else {
-            fprintf(stderr, "Please provide a supported filter name after -F\n");
-            fprintf(stderr, "Supported filters:\n");
-            fprintf(stderr, "\tvhs    --- Old VHS effect\n");
-            fprintf(stderr, "\tbnw    --- Black and white filter\n");
-            fprintf(stderr, "\tblur   --- Blurry effect\n");
-            fprintf(stderr, "\tglitch --- Blurry effect\n");
+            supported_filters(stderr);
+            exit(1);
         }
     }
 }
