@@ -77,8 +77,17 @@ void render_target_create(Render_Target* rt,int width, int height) {
 }
 
 void render_target_free(Render_Target* rt) {
-	glDeleteTextures(1, &rt->texture);
-	glDeleteFramebuffers(1, &rt->framebuffer);
+    if (rt->texture != 0) {
+        glDeleteTextures(1, &rt->texture);
+    }
+    rt->texture = 0;
+    if (rt->framebuffer != 0) {
+        glDeleteFramebuffers(1, &rt->framebuffer);
+    }
+    rt->framebuffer = 0;
+
+    rt->width = 0;
+    rt->height = 0;
 }
 
 void video_renderer_init(SDL_Window* window ,Settings* settings, int width, int height) {
@@ -150,8 +159,14 @@ void video_renderer_destroy() {
     }
     
 
-    glDeleteBuffers(1, &vbo);
-    glDeleteVertexArrays(1, &vao);
+    if (vbo != 0) {
+        glDeleteBuffers(1, &vbo);
+    }
+    vbo = 0;
+    if (vao != 0) {
+        glDeleteVertexArrays(1, &vao);
+    }
+    vao = 0;
 }
 
 void video_renderer_draw(AVFrame* frame)

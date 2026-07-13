@@ -59,8 +59,10 @@ unsigned int shader_compile(const char* vertexSource, const char* fragmentSource
 }
 
 void shader_destroy(unsigned int *shader) {
-    glDeleteProgram(*shader);
-    *shader = 0;
+    if (*shader != 0) {
+        glDeleteProgram(*shader);
+        *shader = 0;
+    }
 }
 
 void shader_use(unsigned int shader)

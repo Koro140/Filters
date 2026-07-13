@@ -10,14 +10,22 @@ void frame_queue_init(Frame_Queue *fq)
     fq->count = 0;
     atomic_init(&fq->aborted, false);
 
-    pthread_mutex_init(&fq->mutex, NULL);
-    pthread_cond_init(&fq->not_empty, NULL);
-    pthread_cond_init(&fq->not_full, NULL);
+    if (pthread_mutex_init(&fq->mutex, NULL) == 0) {
+        fq->mutex_initialized = true;
+    }
+    if (pthread_cond_init(&fq->not_empty, NULL) == 0) {
+        fq->not_empty_initialized = true;
+    }
+    if (pthread_cond_init(&fq->not_full, NULL) == 0) {
+        fq->not_full_initialized = true;
+    }
 }
 
 void frame_queue_destroy(Frame_Queue *fq)
 {
-    pthread_mutex_lock(&fq->mutex);
+    if (fq->mutex_initialized) {
+        pthread_mutex_lock(&fq->mutex);
+    }
 
     while (fq->count > 0) {
         AVFrame *frame = fq->frames[fq->head];
@@ -28,11 +36,17 @@ void frame_queue_destroy(Frame_Queue *fq)
         fq->count--;
     }
 
-    pthread_mutex_unlock(&fq->mutex);
-
-    pthread_mutex_destroy(&fq->mutex);
-    pthread_cond_destroy(&fq->not_empty);
-    pthread_cond_destroy(&fq->not_full);
+    if (fq->mutex_initialized) {
+        pthread_mutex_unlock(&fq->mutex);
+        pthread_mutex_destroy(&fq->mutex);
+    }
+    
+    if (fq->not_empty_initialized) {
+        pthread_cond_destroy(&fq->not_empty);
+    }
+    if (fq->not_full_initialized) {
+        pthread_cond_destroy(&fq->not_full);
+    }
 }
 
 void frame_queue_push(Frame_Queue *fq, AVFrame *frame)

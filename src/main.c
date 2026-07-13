@@ -9,93 +9,96 @@
 #include "video_renderer.h"
 #include "audio_renderer.h"
 
+
+typedef struct App {
+    Frame_Queue video_frame_queue;
+    Frame_Queue audio_frame_queue;
+    Player p;
+    SDL_Window *window;
+    SDL_GLContext sdl_gl_context;
+}App;
+
+// global app state
+App g_app = {0};
+
 void window_resize_callback(SDL_Window* window) {
     int w, h;
     SDL_GetWindowSizeInPixels(window, &w, &h);
     glViewport(0, 0, w, h);
 }
 
-int main(int argc, char **argv)
-{
+void app_initialize(int argc, char** argv);
+void app_run();
+void app_abort(int status);
+
+void app_initialize(int argc, char** argv) {
+
     Settings settings = {0};
     settings_get(&settings, argc, argv);
+    
+    frame_queue_init(&g_app.video_frame_queue);
 
-    // temporary solution to check if exists .. modify the player_init later
-    FILE* f = fopen(settings.video_name, "r");
-    if (f == NULL) {
-        fprintf(stderr, "ERROR::FILE::Couldn't open file %s\n", settings.video_name);
-        return 1;
-    } else {
-        fclose(f);
+    frame_queue_init(&g_app.audio_frame_queue);
+    
+    if (player_init(&g_app.p, &g_app.video_frame_queue, &g_app.audio_frame_queue, settings.video_name) == false) {
+        app_abort(1);
     }
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == false) {
         fprintf(stderr, "ERROR::SDL::Initialization failed ... %s\n", SDL_GetError());
-        return 1;
+        app_abort(1);
     }
 
-    SDL_Window *window = SDL_CreateWindow("Filters", 1920, 1080, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-    if (window == NULL) {
+    g_app.window = SDL_CreateWindow("Filters", 1920, 1080, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    if (g_app.window == NULL) {
         fprintf(stderr, "ERROR::SDL::%s\n", SDL_GetError());
-        SDL_Quit();
-        return 1;
+        app_abort(1);
     }
 
-    SDL_GLContext sdl_gl_context = SDL_GL_CreateContext(window);
-    if (sdl_gl_context == NULL) {
+    g_app.sdl_gl_context = SDL_GL_CreateContext(g_app.window);
+    if (g_app.sdl_gl_context == NULL) {
         fprintf(stderr, "ERROR::SDL::%s\n", SDL_GetError());
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
+        app_abort(1);
     }
     
-    SDL_GL_MakeCurrent(window, sdl_gl_context);
+    SDL_GL_MakeCurrent(g_app.window, g_app.sdl_gl_context);
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
         fprintf(stderr, "ERROR::GLLoad::Failed to load GL functions\n");
-        SDL_GL_DestroyContext(sdl_gl_context);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
+        app_abort(1);
     }
 
     if (SDL_GL_SetSwapInterval(1) == false) {
         fprintf(stderr, "ERROR::SDL_GL::Failed to enable vsync\n");
     }
-    window_resize_callback(window);
+    window_resize_callback(g_app.window);
 
-    bool appRunning = true;
-    SDL_Event e;
-    
-    Frame_Queue video_frame_queue;
-    frame_queue_init(&video_frame_queue);
-    
-    Frame_Queue audio_frame_queue;
-    frame_queue_init(&audio_frame_queue);
-    
-    Player p = {0};
-    player_init(&p, &video_frame_queue, &audio_frame_queue, settings.video_name);
-    
-    if (p.video_decoder == NULL || p.video_decoder->pix_fmt != AV_PIX_FMT_YUV420P) {
+    if (g_app.p.video_decoder == NULL || g_app.p.video_decoder->pix_fmt != AV_PIX_FMT_YUV420P) {
         fprintf(stderr, "ERROR::VIDEO::Unsupported pixel format for display\n");
-        player_destroy(&p);
-        frame_queue_destroy(&video_frame_queue);
-        SDL_GL_DestroyContext(sdl_gl_context);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
+        app_abort(1);
+        return;
     }
     
-    video_renderer_init(window, &settings, p.video_decoder->width, p.video_decoder->height);
-    audio_renderer_init(p.audio_decoder->ch_layout.nb_channels, p.audio_decoder->sample_rate);
+    video_renderer_init(g_app.window, &settings, g_app.p.video_decoder->width, g_app.p.video_decoder->height);
+    audio_renderer_init(g_app.p.audio_decoder->ch_layout.nb_channels, g_app.p.audio_decoder->sample_rate);
 
+    // freeing settings at the end of initialization
+    settings_free(&settings);
+}
+
+void app_run() {
+    
     pthread_t player_thread;
-    player_thread_run(&p);
-
+    player_thread_run(&g_app.p);
+    
     uint64_t playback_start = SDL_GetPerformanceCounter();
     double freq = (double)SDL_GetPerformanceFrequency();
     
     AVFrame* vid_frame = NULL;
     AVFrame* audio_frame = NULL;
+
+    bool appRunning = true;
+    SDL_Event e;
+
     while (appRunning) {
         while (SDL_PollEvent(&e)) {
             switch (e.type) {
@@ -103,7 +106,7 @@ int main(int argc, char **argv)
                 appRunning = false;
                 break;
             case SDL_EVENT_WINDOW_RESIZED:
-                window_resize_callback(window);
+                window_resize_callback(g_app.window);
                 break;
             }
         }
@@ -111,15 +114,15 @@ int main(int argc, char **argv)
         double elapsed = (double)(SDL_GetPerformanceCounter() - playback_start) / freq;
         
         if (vid_frame == NULL) {
-            vid_frame = frame_queue_try_pop(&video_frame_queue);
+            vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
         }
         
         if (audio_frame == NULL) {
-            audio_frame = frame_queue_try_pop(&audio_frame_queue);
+            audio_frame = frame_queue_try_pop(&g_app.audio_frame_queue);
         }
 
         if (vid_frame != NULL) {
-            double pts = vid_frame->best_effort_timestamp * p.video_timebase;
+            double pts = vid_frame->best_effort_timestamp * g_app.p.video_timebase;
 
             video_renderer_draw(vid_frame);
             if (pts <= elapsed) {
@@ -128,7 +131,7 @@ int main(int argc, char **argv)
         }
 
         if (audio_frame != NULL) {
-            double pts = audio_frame->best_effort_timestamp * p.audio_timebase;
+            double pts = audio_frame->best_effort_timestamp * g_app.p.audio_timebase;
 
             if (pts <= elapsed) {
                 audio_renderer_update(audio_frame);
@@ -136,21 +139,40 @@ int main(int argc, char **argv)
             }
         }
 
-        SDL_GL_SwapWindow(window);
+        SDL_GL_SwapWindow(g_app.window);
     }
 
-    player_thread_stop(&p);
+    // freeing frames when the loop done
     if (vid_frame != NULL) { av_frame_free(&vid_frame); }
     if (audio_frame != NULL) { av_frame_free(&audio_frame); }
-    
+
+    player_thread_stop(&g_app.p);
+
+    app_abort(0);
+}
+
+void app_abort(int status) {
     video_renderer_destroy();
     audio_renderer_destroy();
-    player_destroy(&p);
-    frame_queue_destroy(&video_frame_queue);
+    player_destroy(&g_app.p);
+    frame_queue_destroy(&g_app.video_frame_queue);
+    frame_queue_destroy(&g_app.audio_frame_queue);
 
-    SDL_GL_DestroyContext(sdl_gl_context);
-    SDL_DestroyWindow(window);
+    if (g_app.sdl_gl_context != 0) {
+        SDL_GL_DestroyContext(g_app.sdl_gl_context);
+    }
+    
+    if (g_app.window != NULL) {
+        SDL_DestroyWindow(g_app.window);
+    }
+    
     SDL_Quit();
 
-    settings_free(&settings);
+    exit(status);
+}
+
+int main(int argc, char **argv)
+{
+    app_initialize(argc, argv);
+    app_run();
 }

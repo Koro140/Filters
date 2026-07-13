@@ -35,5 +35,7 @@ void audio_renderer_update(AVFrame* f) {
 }
 
 void audio_renderer_destroy() {
-    SDL_DestroyAudioStream(audio_stream);
+    if (audio_stream != NULL) {
+        SDL_DestroyAudioStream(audio_stream);
+    }
 }

@@ -19,6 +19,10 @@ typedef struct Frame_Queue{
     pthread_cond_t not_empty;
     pthread_cond_t not_full;
 
+    bool mutex_initialized;
+    bool not_empty_initialized;
+    bool not_full_initialized;
+
     atomic_bool aborted;
 } Frame_Queue;
 

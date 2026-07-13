@@ -20,8 +20,10 @@ unsigned int texture_create_r8(int width, int height)
 }
 
 void texture_destroy(unsigned int* t) {
-    glDeleteTextures(1, t);
-    *t = 0;
+    if (*t != 0) {
+        glDeleteTextures(1, t);
+        *t = 0;
+    }
 }
 
 void upload_texture_r8(unsigned int texture, const uint8_t* data, int width, int height, int padding) {

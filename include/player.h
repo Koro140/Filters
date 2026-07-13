@@ -41,7 +41,7 @@ typedef struct Player {
   pthread_t   thread;
 }Player;
 
-void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url);
+bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url);
 void player_destroy(Player *player);
 
 void player_thread_run(Player* p);

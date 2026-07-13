@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url);
+bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url);
 void player_destroy(Player* p);
 static void player_update(Player* p);
 static void player_handle_video_packet(Player* p);
@@ -17,7 +17,7 @@ static void print_av_error(const char *context, int err) {
     fprintf(stderr, "%s: %s\n", context, errbuf);
 }
 
-void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url) {
+bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url) {
     player->video_queue_referenece= video_queue;
     player->audio_queue_referenece = audio_queue;
     player->format_context = NULL;
@@ -37,13 +37,13 @@ void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_qu
     int ret = avformat_open_input(&player->format_context, url, NULL, NULL);
     if (ret < 0) {
         print_av_error("ERROR::FILE::Couldn't open file", ret);
-        return;
+        return false;
     }
 
     ret = avformat_find_stream_info(player->format_context, NULL);
     if (ret < 0) {
-        print_av_error("avformat_find_stream_info", ret);
-        return;
+        print_av_error("ERROR::LIB-AV::Coudln't find stream info", ret);
+        return false;
     }
 
     // Initializing video stream/decoder
@@ -112,9 +112,13 @@ void player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_qu
     );
 
     swr_init(player->swr);
+
+    return true;
 }
 
 void player_destroy(Player* p) {
+    swr_free(&p->swr);
+    
     av_packet_free(&p->packet);
 
     av_frame_free(&p->frame);
