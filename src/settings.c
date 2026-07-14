@@ -14,7 +14,7 @@ void supported_filters(FILE* stream) {
     fprintf(stream, "\tvhs    --- Old VHS effect\n");
     fprintf(stream, "\tbnw    --- Black and white filter\n");
     fprintf(stream, "\tblur   --- Blurry effect\n");
-    fprintf(stream, "\tglitch --- Blurry effect\n");
+    fprintf(stream, "\tglitch --- Glitchy effect\n");
 }
 
 void usage(FILE *stream)
