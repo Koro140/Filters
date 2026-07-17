@@ -11,12 +11,6 @@ Dynamic_Array dynamic_arr_init(int item_size, int initial_capacity);
 void dynamic_array_append(Dynamic_Array* arr, void* item);
 void dynamic_array_free(Dynamic_Array* arr);
 
-#define dynamic_array_push(arr, value) \
-    do {                                \
-        typeof(value) temp = (value); \
-        dynamic_array_append((arr), &temp); \
-    } while (0)                         \
-
 #ifdef DYNAMIC_ARRAY_IMPLEMENTATION
 
 #include <stdlib.h>

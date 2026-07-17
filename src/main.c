@@ -49,7 +49,7 @@ void app_initialize(int argc, char** argv) {
         app_abort(1);
     }
 
-    g_app.window = SDL_CreateWindow("Filters", 1920, 1080, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    g_app.window = SDL_CreateWindow("Filters", 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (g_app.window == NULL) {
         fprintf(stderr, "ERROR::SDL::%s\n", SDL_GetError());
         app_abort(1);
@@ -87,7 +87,12 @@ void app_initialize(int argc, char** argv) {
 
 void app_run() {
     
+#ifdef _WIN32
+    HANDLE player_thread;
+#else
     pthread_t player_thread;
+#endif // _WIN32
+
     player_thread_run(&g_app.p);
     
     uint64_t playback_start = SDL_GetPerformanceCounter();

@@ -7,7 +7,13 @@ void player_destroy(Player* p);
 static void player_update(Player* p);
 static void player_handle_video_packet(Player* p);
 static void player_handle_audio_packet(Player* p);
-static void *player_thread(void* arg);
+
+#ifdef _WIN32
+static DWORD WINAPI player_thread(LPVOID arg);
+#else
+static void* player_thread(void* arg);
+#endif
+
 void player_thread_run(Player* p);
 void player_thread_stop(Player* p);
 
@@ -15,6 +21,14 @@ static void print_av_error(const char *context, int err) {
     char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
     av_strerror(err, errbuf, sizeof(errbuf));
     fprintf(stderr, "%s: %s\n", context, errbuf);
+}
+
+void player_set_quit(Player* p) {
+#ifdef _WIN32
+    InterlockedExchange(&p->quit, 1);
+#else
+    atomic_store(&p->quit, true);
+#endif // _WIN32
 }
 
 bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url) {
@@ -32,7 +46,7 @@ bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_qu
     player->video_stream_idx = -1;
     player->audio_stream_idx = -1;
     
-    atomic_store(&player->quit, false);
+    player->quit = 0;
 
     int ret = avformat_open_input(&player->format_context, url, NULL, NULL);
     if (ret < 0) {
@@ -134,18 +148,18 @@ void player_destroy(Player* p) {
 
 static void player_update(Player* p) {
     if (p->format_context == NULL || p->packet == NULL) {
-        atomic_store(&p->quit, true);
+        player_set_quit(p);
         return;
     }
 
     int ret = av_read_frame(p->format_context, p->packet);
     if (ret == AVERROR_EOF) {
-        atomic_store(&p->quit, true);
+        player_set_quit(p);
         return;
     }
     else if (ret < 0) {
         print_av_error("av_read_frame", ret);
-        atomic_store(&p->quit, true);
+        player_set_quit(p);
         return;
     }
 
@@ -215,6 +229,45 @@ void player_handle_audio_packet(Player* p) {
     }
 }
 
+
+#ifdef _WIN32
+static DWORD WINAPI player_thread(LPVOID arg)
+{
+    Player* p = (Player*)arg;
+
+    while (!p->quit)
+    {
+        player_update(p);
+    }
+
+    return 0;
+}
+
+void player_thread_run(Player* p)
+{
+    p->thread = CreateThread(
+        NULL,           // default security
+        0,              // default stack size
+        player_thread,  // thread function
+        p,              // argument
+        0,              // run immediately
+        NULL
+        );
+}
+
+void player_thread_stop(Player* p)
+{
+    player_set_quit(p);
+
+    frame_queue_abort(p->video_queue_referenece);
+    frame_queue_abort(p->audio_queue_referenece);
+
+    WaitForSingleObject(p->thread, INFINITE);
+    CloseHandle(p->thread);
+    p->thread = NULL;
+}
+
+#else
 static void *player_thread(void* arg) {
     Player* p = arg;
     while (!atomic_load(&p->quit))
@@ -235,3 +288,4 @@ void player_thread_stop(Player* p) {
     frame_queue_abort(p->audio_queue_referenece);
     pthread_join(p->thread, NULL);
 }
+#endif // _WIN32

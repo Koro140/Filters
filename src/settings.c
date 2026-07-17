@@ -61,18 +61,22 @@ void settings_get(Settings* settings, int argc, char** argv) {
     
     // Doing the filters type parsing
     for (size_t i = 0; i < filter_flag_list.count; i++) {
+        FilterType t;
         if (strcmp(filter_flag_list.items[i], "vhs") == 0) {
-            dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_VHS);
+            t = FILTER_TYPE_VHS;
         } else if (strcmp(filter_flag_list.items[i], "bnw") == 0) {
-            dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_BLACK_WHITE);
+            t = FILTER_TYPE_BLACK_WHITE;
         } else if (strcmp(filter_flag_list.items[i], "blur") == 0) {
-            dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_BLUR);
+            t = FILTER_TYPE_BLUR;
         } else if (strcmp(filter_flag_list.items[i], "glitch") == 0) {
-            dynamic_array_push(&settings->filter_types_array, FILTER_TYPE_GLITCH);
+            t = FILTER_TYPE_GLITCH;
         } else {
             supported_filters(stderr);
+            settings_free(settings);
             exit(1);
         }
+
+        dynamic_array_append(&settings->filter_types_array, &t);
     }
 }
 
