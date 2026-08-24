@@ -32,17 +32,13 @@ void player_set_quit(Player* p) {
 }
 
 bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url) {
+    *player = (Player){0};
+    
     player->video_queue_referenece= video_queue;
     player->audio_queue_referenece = audio_queue;
-    player->format_context = NULL;
     player->packet = av_packet_alloc();
     player->frame = av_frame_alloc();
     player->audio_frame = av_frame_alloc();
-    player->video_codec = NULL;
-    player->audio_codec = NULL;
-    player->video_decoder = NULL;
-    player->audio_decoder = NULL;
-    player->resampled_frame = NULL;
     player->video_stream_idx = -1;
     player->audio_stream_idx = -1;
     

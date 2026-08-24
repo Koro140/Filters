@@ -86,13 +86,6 @@ void app_initialize(int argc, char** argv) {
 }
 
 void app_run() {
-    
-#ifdef _WIN32
-    HANDLE player_thread;
-#else
-    pthread_t player_thread;
-#endif // _WIN32
-
     player_thread_run(&g_app.p);
     
     uint64_t playback_start = SDL_GetPerformanceCounter();
