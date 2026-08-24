@@ -6,6 +6,77 @@
 #include "shader.h"
 #include "texture.h"
 
+const char* to_screen_vertex_src = 
+                        "#version 330 core\n"
+                        "\n"
+                        "layout(location = 0) in vec2 aPos;\n"
+                        "layout(location = 1) in vec2 aTexCoord;\n"
+                        "\n"
+                        "out vec2 TexCoord;\n"
+                        "\n"
+                        "uniform vec2 scale;\n"
+                        "\n"
+                        "void main()\n"
+                        "{\n"
+                        "    TexCoord = aTexCoord;\n"
+                        "    gl_Position = vec4(aPos * scale, 0.0, 1.0);\n"
+                        "}\n";
+
+const char* filter_vertex_src = 
+                        "#version 330 core\n"
+                        "\n"
+                        "layout(location = 0) in vec2 aPos;\n"
+                        "layout(location = 1) in vec2 aTexCoord;\n"
+                        "\n"
+                        "out vec2 TexCoord;\n"
+                        "\n"
+                        "void main()\n"
+                        "{\n"
+                        "    TexCoord = aTexCoord;\n"
+                        "    gl_Position = vec4(aPos, 0.0, 1.0);\n"
+                        "}\n";
+
+const char* yuv_to_rgb_src = 
+                        "#version 330 core\n"
+                        "in vec2 TexCoord;\n"
+
+                        "out vec4 FragColor;\n"
+
+                        "uniform sampler2D texY;\n"
+                        "uniform sampler2D texU;\n"
+                        "uniform sampler2D texV;\n"
+
+                        "void main()\n"
+                        "{\n"
+                        "    vec2 uv = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
+                        "    float y = texture(texY, uv).r;\n"
+
+                        "    float u = texture(texU, uv).r - 0.5;\n"
+                        "    float v = texture(texV, uv).r - 0.5;\n"
+
+                        "    vec3 rgb;\n"
+
+                        "    rgb.r = y + 1.402 * v;\n"
+                        "    rgb.g = y - 0.344136 * u - 0.714136 * v;\n"
+                        "    rgb.b = y + 1.772 * u;\n"
+
+                        "    FragColor = vec4(rgb, 1.0);\n"
+                        "}\n";
+
+const char* to_screen_src = 
+                        "#version 330 core\n"
+                        "\n"
+                        "in vec2 TexCoord;\n"
+                        "out vec4 FragColor;\n"
+                        "\n"
+                        "uniform sampler2D screenTexture;\n"
+                        "\n"
+                        "void main()\n"
+                        "{\n"
+                        "    FragColor = texture(screenTexture, TexCoord);\n"
+                        "}\n";
+
+
 typedef struct Render_Target {
     unsigned int texture;
     unsigned int framebuffer;
