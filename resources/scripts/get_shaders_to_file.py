@@ -3,6 +3,8 @@ files_to_vars = [
     ["blur.glsl", "blur_src"],
     ["glitch.glsl","glitch_src"],
     ["vhs.glsl", "vhs_src"],
+    ["chromatic.glsl", "chromatic_src"],
+    ["scanline.glsl", "scanline_src"],
 ]
 
 path = "../shaders/"

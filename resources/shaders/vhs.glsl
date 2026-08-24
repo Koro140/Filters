@@ -4,10 +4,9 @@ in vec2 TexCoord;
 out vec4 FragColor;
 
 uniform sampler2D screenTexture;
-uniform float time;       // pass elapsed time in seconds
-uniform vec2 resolution;  // screen resolution
+uniform float time;
+uniform vec2 resolution;
 
-// Simple pseudo-random hash
 float hash(vec2 p)
 {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -17,42 +16,35 @@ void main()
 {
     vec2 uv = TexCoord;
 
-    // --- Tracking distortion (horizontal jitter bands) ---
-    float trackingNoise = hash(vec2(floor(uv.y * 40.0), time * 4.0));
-    float tracking = (trackingNoise - 0.5) * 0.004;
-    // Occasional bigger glitch band
-    float glitchBand = step(0.995, hash(vec2(floor(uv.y * 10.0), floor(time * 6.0))));
-    tracking += glitchBand * (hash(vec2(time)) - 0.5) * 0.05;
-    uv.x += tracking;
+    // Subtle horizontal tracking distortion
+    float line = floor(uv.y * 50.0);
+    float noise = hash(vec2(line, floor(time * 8.0)));
 
-    // --- Chromatic aberration (color channel split) ---
-    float aberration = 0.004;
-    float r = texture(screenTexture, uv + vec2(aberration, 0.0)).r;
-    float g = texture(screenTexture, uv).g;
-    float b = texture(screenTexture, uv - vec2(aberration, 0.0)).b;
-    vec3 color = vec3(r, g, b);
+    uv.x += (noise - 0.5) * 0.003;
 
-    // --- Scanlines ---
-    float scanline = sin(uv.y * resolution.y * 1.5) * 0.08;
-    color -= scanline;
+    // Occasional small tracking glitch
+    float glitch = step(0.995, hash(vec2(floor(time * 5.0), line)));
 
-    // --- Static noise ---
-    float noise = hash(uv * time) * 0.08;
-    color += noise - 0.04;
+    uv.x += glitch * (hash(vec2(line, time)) - 0.5) * 0.025;
 
-    // --- Slight vertical roll / brightness flicker ---
-    float flicker = 0.97 + 0.03 * sin(time * 10.0);
-    color *= flicker;
+    // Original image — no chromatic aberration
+    vec3 color = texture(screenTexture, uv).rgb;
 
-    // --- Vignette ---
+    // Subtle scanlines
+    float scanline = sin(uv.y * resolution.y * 1.5);
+    color *= 1.0 - scanline * 0.025;
+
+    // Fine VHS noise
+    float grain = hash(uv * resolution + time * 20.0);
+    color += (grain - 0.5) * 0.025;
+
+    // Slight brightness flicker
+    color *= 0.99 + 0.01 * sin(time * 8.0);
+
+    // Very subtle vignette
     vec2 center = uv - 0.5;
-    float vignette = 1.0 - dot(center, center) * 0.6;
+    float vignette = 1.0 - dot(center, center) * 0.25;
     color *= vignette;
-
-    // --- Slight desaturation + contrast bump for that washed VHS look ---
-    float gray = dot(color, vec3(0.299, 0.587, 0.114));
-    color = mix(color, vec3(gray), 0.15);
-    color = clamp((color - 0.5) * 1.1 + 0.5, 0.0, 1.0);
 
     FragColor = vec4(color, 1.0);
 }

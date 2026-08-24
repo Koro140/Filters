@@ -7,6 +7,8 @@ typedef enum FilterType{
     FILTER_TYPE_BLACK_WHITE,
     FILTER_TYPE_BLUR,
     FILTER_TYPE_GLITCH,
+    FILTER_TYPE_CHROMA,
+    FILTER_TYPE_SCANLINE,
 }FilterType;
 
 typedef struct Settings {

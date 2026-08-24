@@ -15,6 +15,8 @@ void supported_filters(FILE* stream) {
     fprintf(stream, "\tbnw    --- Black and white filter\n");
     fprintf(stream, "\tblur   --- Blurry effect\n");
     fprintf(stream, "\tglitch --- Glitchy effect\n");
+    fprintf(stream, "\tchroma --- Chromatic Abbaration effect\n");
+    fprintf(stream, "\tscanline --- Old CRT TV lines effect\n");
 }
 
 void usage(FILE *stream)
@@ -70,6 +72,10 @@ void settings_get(Settings* settings, int argc, char** argv) {
             t = FILTER_TYPE_BLUR;
         } else if (strcmp(filter_flag_list.items[i], "glitch") == 0) {
             t = FILTER_TYPE_GLITCH;
+        } else if (strcmp(filter_flag_list.items[i], "chroma") == 0) {
+            t = FILTER_TYPE_CHROMA;
+        } else if (strcmp(filter_flag_list.items[i], "scanline") == 0) {
+            t = FILTER_TYPE_SCANLINE;
         } else {
             supported_filters(stderr);
             settings_free(settings);

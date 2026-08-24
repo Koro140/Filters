@@ -6,6 +6,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+add_custom_target(run_python_script
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_SOURCE_DIR}/resources/scripts/get_shaders_to_file.py"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/resources/scripts/"
+)
+
 add_library(glad vendor/glad/src/glad.c)
 target_include_directories(glad PUBLIC vendor/glad/include)
 
@@ -30,6 +38,7 @@ add_executable(filters
     src/settings.c
     src/filters.c
 )
+add_dependencies(filters run_python_script)
 
 target_include_directories(filters PRIVATE
     include
