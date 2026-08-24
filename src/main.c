@@ -88,9 +88,6 @@ void app_initialize(int argc, char** argv) {
 void app_run() {
     player_thread_run(&g_app.p);
     
-    uint64_t playback_start = SDL_GetPerformanceCounter();
-    double freq = (double)SDL_GetPerformanceFrequency();
-    
     AVFrame* vid_frame = NULL;
     AVFrame* audio_frame = NULL;
 
@@ -109,31 +106,44 @@ void app_run() {
             }
         }
 
-        double elapsed = (double)(SDL_GetPerformanceCounter() - playback_start) / freq;
-        
+        // Video processing
         if (vid_frame == NULL) {
             vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
         }
+
+        AVFrame* frame_to_display = NULL;
+        double audio_clock= audio_renderer_get_clock();
         
+        while (vid_frame != NULL) {
+            double pts = vid_frame->best_effort_timestamp * g_app.p.video_timebase;
+            if (pts > audio_clock) {
+                break;
+            }
+
+            if (frame_to_display != NULL) {
+                av_frame_free(&frame_to_display);
+            }
+            
+            frame_to_display = vid_frame;
+
+            vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
+        }
+        
+        if (frame_to_display != NULL) {
+            video_renderer_process_frame(frame_to_display);
+            av_frame_free(&frame_to_display);
+        }
+        
+        // Audio processing
         if (audio_frame == NULL) {
             audio_frame = frame_queue_try_pop(&g_app.audio_frame_queue);
-        }
-
-        if (vid_frame != NULL) {
-            double pts = vid_frame->best_effort_timestamp * g_app.p.video_timebase;
-            if (pts <= elapsed) {
-                video_renderer_process_frame(vid_frame);
-                av_frame_free(&vid_frame);
-            }
         }
         
         if (audio_frame != NULL) {
             double pts = audio_frame->best_effort_timestamp * g_app.p.audio_timebase;
             
-            if (pts <= elapsed) {
-                audio_renderer_update(audio_frame);
-                av_frame_free(&audio_frame);
-            }
+            audio_renderer_update(audio_frame, pts);
+            av_frame_free(&audio_frame);
         }
         
         video_renderer_present();

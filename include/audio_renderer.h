@@ -4,5 +4,6 @@
 #include <libavcodec/codec.h>
 
 void audio_renderer_init(int channels, int frequency);
-void audio_renderer_update(AVFrame* f);
+void audio_renderer_update(AVFrame* f,double pts);
+double audio_renderer_get_clock();
 void audio_renderer_destroy();
