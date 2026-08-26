@@ -2,36 +2,9 @@
 #pragma once
 
 #include <libavutil/frame.h>
-#include <stdbool.h>
+#include <SDL3/SDL.h>
 
 #define FRAME_QUEUE_COUNT 5
-
-#ifdef _WIN32
-#include <windows.h>
-
-typedef struct Frame_Queue
-{
-    AVFrame* frames[FRAME_QUEUE_COUNT];
-
-    int head;
-    int tail;
-    int count;
-
-    CRITICAL_SECTION mutex;
-    CONDITION_VARIABLE not_empty;
-    CONDITION_VARIABLE not_full;
-
-    bool mutex_initialized;
-    bool not_empty_initialized;
-    bool not_full_initialized;
-    
-    volatile LONG aborted;
-} Frame_Queue;
-
-#else
-
-#include <stdatomic.h>
-#include <pthread.h>
 
 typedef struct Frame_Queue {
     AVFrame* frames[FRAME_QUEUE_COUNT];
@@ -39,18 +12,16 @@ typedef struct Frame_Queue {
     int tail;
     int count;
 
-    pthread_mutex_t mutex;
-    pthread_cond_t not_empty;
-    pthread_cond_t not_full;
+    SDL_Mutex* mutex;
+    SDL_Condition* not_empty;
+    SDL_Condition* not_full;
 
     bool mutex_initialized;
     bool not_empty_initialized;
     bool not_full_initialized;
 
-    atomic_bool aborted;
+    SDL_AtomicInt aborted;
 } Frame_Queue;
-
-#endif // _WIN32
 
 void frame_queue_init(Frame_Queue* fq);
 void frame_queue_destroy(Frame_Queue* fq);
