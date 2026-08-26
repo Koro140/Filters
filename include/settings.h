@@ -9,6 +9,9 @@ typedef enum FilterType{
     FILTER_TYPE_GLITCH,
     FILTER_TYPE_CHROMA,
     FILTER_TYPE_SCANLINE,
+    FILTER_TYPE_FILM_GRAIN,
+    FILTER_TYPE_VIGNETTE,
+    FILTER_TYPE_PIXEL,
 }FilterType;
 
 typedef struct Settings {

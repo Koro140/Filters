@@ -17,6 +17,9 @@ void supported_filters(FILE* stream) {
     fprintf(stream, "\tglitch --- Glitchy effect\n");
     fprintf(stream, "\tchroma --- Chromatic Abbaration effect\n");
     fprintf(stream, "\tscanline --- Old CRT TV lines effect\n");
+    fprintf(stream, "\tfilm --- Film grain effect\n");
+    fprintf(stream, "\tvignette --- Vignette effect\n");
+    fprintf(stream, "\tpixel --- Pixelation effect\n");
 }
 
 void usage(FILE *stream)
@@ -76,6 +79,12 @@ void settings_get(Settings* settings, int argc, char** argv) {
             t = FILTER_TYPE_CHROMA;
         } else if (strcmp(filter_flag_list.items[i], "scanline") == 0) {
             t = FILTER_TYPE_SCANLINE;
+        } else if (strcmp(filter_flag_list.items[i], "film") == 0) {
+            t = FILTER_TYPE_FILM_GRAIN;
+        } else if (strcmp(filter_flag_list.items[i], "vignette") == 0) {
+            t = FILTER_TYPE_VIGNETTE;
+        } else if (strcmp(filter_flag_list.items[i], "pixel") == 0) {
+            t = FILTER_TYPE_PIXEL;
         } else {
             supported_filters(stderr);
             settings_free(settings);

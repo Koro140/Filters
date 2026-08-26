@@ -126,6 +126,9 @@ extern const char* blur_src;
 extern const char* glitch_src;
 extern const char* chromatic_src;
 extern const char* scanline_src;
+extern const char* film_grain_src;
+extern const char* vignette_src;
+extern const char* pixel_src;
 
 void render_target_create(Render_Target* rt,int width, int height) {
     rt->width = width;
@@ -197,6 +200,14 @@ void video_renderer_init(SDL_Window* window ,Settings* settings, int width, int 
             break;
         case FILTER_TYPE_SCANLINE:
             filters_shaders[i] = shader_compile(filter_vertex_src, scanline_src, NULL);
+            break;
+        case FILTER_TYPE_FILM_GRAIN:
+            filters_shaders[i] = shader_compile(filter_vertex_src, film_grain_src, NULL);
+            break;
+        case FILTER_TYPE_VIGNETTE:
+            filters_shaders[i] = shader_compile(filter_vertex_src, vignette_src, NULL);
+        case FILTER_TYPE_PIXEL:
+            filters_shaders[i] = shader_compile(filter_vertex_src, pixel_src, NULL);
             break;
         }
     }

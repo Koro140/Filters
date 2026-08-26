@@ -5,6 +5,9 @@ files_to_vars = [
     ["vhs.glsl", "vhs_src"],
     ["chromatic.glsl", "chromatic_src"],
     ["scanline.glsl", "scanline_src"],
+    ["film_grain.glsl", "film_grain_src"],
+    ["vignette.glsl", "vignette_src"],
+    ["pixel.glsl", "pixel_src"],
 ]
 
 path = "../shaders/"
