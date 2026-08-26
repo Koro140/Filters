@@ -11,19 +11,15 @@ void frame_queue_init(Frame_Queue* fq)
     SDL_SetAtomicInt(&fq->aborted, 0);
     
     fq->mutex = SDL_CreateMutex();
-    if (fq->mutex == NULL) {
-        fq->mutex_initialized = true;
-    }
-    
+
+    fq->mutex = SDL_CreateMutex();
+    fq->mutex_initialized = (fq->mutex != NULL);
+
     fq->not_empty = SDL_CreateCondition();
-    if (fq->not_empty ==  NULL) {
-        fq->not_empty_initialized = true;
-    }
-    
+    fq->not_empty_initialized = (fq->not_empty != NULL);
+
     fq->not_full = SDL_CreateCondition();
-    if (fq->not_full ==  NULL) {
-        fq->not_full_initialized = true;
-    }
+    fq->not_full_initialized = (fq->not_full != NULL);
 }
 
 void frame_queue_destroy(Frame_Queue* fq)

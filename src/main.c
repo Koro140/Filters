@@ -32,9 +32,14 @@ void app_run();
 void app_abort(int status);
 
 void app_initialize(int argc, char** argv) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == false) {
+        fprintf(stderr, "ERROR::SDL::Initialization failed ... %s\n", SDL_GetError());
+        app_abort(1);
+    }
 
     Settings settings = {0};
     settings_get(&settings, argc, argv);
+
     
     frame_queue_init(&g_app.video_frame_queue);
 
@@ -44,10 +49,6 @@ void app_initialize(int argc, char** argv) {
         app_abort(1);
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == false) {
-        fprintf(stderr, "ERROR::SDL::Initialization failed ... %s\n", SDL_GetError());
-        app_abort(1);
-    }
 
     g_app.window = SDL_CreateWindow("Filters", 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (g_app.window == NULL) {

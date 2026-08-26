@@ -4,7 +4,7 @@
 #include <libavutil/frame.h>
 #include <SDL3/SDL.h>
 
-#define FRAME_QUEUE_COUNT 5
+#define FRAME_QUEUE_COUNT 32
 
 typedef struct Frame_Queue {
     AVFrame* frames[FRAME_QUEUE_COUNT];
