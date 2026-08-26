@@ -50,9 +50,14 @@ void audio_renderer_update(AVFrame* f, double pts) {
 
 double audio_renderer_get_clock() {
     int queued = SDL_GetAudioStreamQueued(g_aud_renderer.audio_stream);
-
+    
     double queued_seconds = (double)queued / (2.0 * g_aud_renderer.channels * g_aud_renderer.frequency);
     return g_aud_renderer.audio_end_pts - queued_seconds;
+}
+
+double audio_renderer_get_queued_seconds() {
+    int queued = SDL_GetAudioStreamQueued(g_aud_renderer.audio_stream);
+    return (double)queued / (2.0 * g_aud_renderer.channels * g_aud_renderer.frequency);
 }
 
 void audio_renderer_destroy() {

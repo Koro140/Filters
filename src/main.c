@@ -134,12 +134,13 @@ void app_run() {
             av_frame_free(&frame_to_display);
         }
         
-        // Audio processing
-        if (audio_frame == NULL) {
+        // Audio processing        
+        while (audio_renderer_get_queued_seconds() < 0.5)  {
             audio_frame = frame_queue_try_pop(&g_app.audio_frame_queue);
-        }
-        
-        if (audio_frame != NULL) {
+
+            if (audio_frame == NULL) {
+                break;
+            }
             double pts = audio_frame->best_effort_timestamp * g_app.p.audio_timebase;
             
             audio_renderer_update(audio_frame, pts);
