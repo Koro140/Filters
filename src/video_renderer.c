@@ -329,7 +329,7 @@ void video_renderer_present() {
     int w, h;
     SDL_GetWindowSize(window_reference, &w, &h);
 
-    float texAspect = (float)rt1.width / rt2.height;
+    float texAspect = (float)rt1.width / rt1.height;
     float winAspect  = (float)w / h;
 
     float scaleX = 1.0f, scaleY = 1.0f;
@@ -339,6 +339,8 @@ void video_renderer_present() {
         scaleY = winAspect / texAspect;
     }
     glViewport(0, 0, w, h);
+    glClearColor(0, 0, 0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, rt1_as_input ? rt1.texture : rt2.texture);

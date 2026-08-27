@@ -106,7 +106,6 @@ void app_run() {
                 break;
             }
         }
-
         // Video processing
         if (vid_frame == NULL) {
             vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
