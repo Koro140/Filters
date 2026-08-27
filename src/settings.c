@@ -11,15 +11,16 @@
 void supported_filters(FILE* stream) {
     fprintf(stream, "Please provide a supported filter name after -F\n");
     fprintf(stream, "Supported filters:\n");
-    fprintf(stream, "\tvhs    --- Old VHS effect\n");
-    fprintf(stream, "\tbnw    --- Black and white filter\n");
-    fprintf(stream, "\tblur   --- Blurry effect\n");
-    fprintf(stream, "\tglitch --- Glitchy effect\n");
-    fprintf(stream, "\tchroma --- Chromatic Abbaration effect\n");
+    fprintf(stream, "\tvhs      --- Old VHS effect\n");
+    fprintf(stream, "\tbnw      --- Black and white filter\n");
+    fprintf(stream, "\tblur     --- Blurry effect\n");
+    fprintf(stream, "\tglitch   --- Glitchy effect\n");
+    fprintf(stream, "\tchroma   --- Chromatic Abbaration effect\n");
     fprintf(stream, "\tscanline --- Old CRT TV lines effect\n");
-    fprintf(stream, "\tfilm --- Film grain effect\n");
+    fprintf(stream, "\tfilm     --- Film grain effect\n");
     fprintf(stream, "\tvignette --- Vignette effect\n");
-    fprintf(stream, "\tpixel --- Pixelation effect\n");
+    fprintf(stream, "\tpixel    --- Pixelation effect\n");
+    fprintf(stream, "\evil      --- Negative colors effect\n");
 }
 
 void usage(FILE *stream)
@@ -85,6 +86,8 @@ void settings_get(Settings* settings, int argc, char** argv) {
             t = FILTER_TYPE_VIGNETTE;
         } else if (strcmp(filter_flag_list.items[i], "pixel") == 0) {
             t = FILTER_TYPE_PIXEL;
+        } else if (strcmp(filter_flag_list.items[i], "evil") == 0) {
+            t = FILTER_TYPE_EVIL;
         } else {
             supported_filters(stderr);
             settings_free(settings);
