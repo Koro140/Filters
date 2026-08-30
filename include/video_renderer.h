@@ -11,3 +11,5 @@ void video_renderer_destroy();
 void video_renderer_process_frame(AVFrame *frame);
 
 void video_renderer_present();
+
+const unsigned char* video_renderer_get_frame(int* out_width, int* out_height);

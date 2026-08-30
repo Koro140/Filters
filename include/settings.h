@@ -18,7 +18,9 @@ typedef enum FilterType{
 typedef struct Settings {
     char* video_name;
     Dynamic_Array filter_types_array;
+    char* export_name;
+    bool export_mode;
 }Settings;
 
-void settings_get(Settings* settings, int argc, char** argv);
+void settigs_get(Settings* settings, int argc, char** argv);
 void settings_free(Settings* settings);

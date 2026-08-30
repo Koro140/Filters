@@ -8,14 +8,20 @@
 #include "player.h"
 #include "video_renderer.h"
 #include "audio_renderer.h"
-
+#include "exporter.h"
 
 typedef struct App {
     Frame_Queue video_frame_queue;
     Frame_Queue audio_frame_queue;
     Player p;
+    Exporter exporter;
+
     SDL_Window *window;
     SDL_GLContext sdl_gl_context;
+
+    AVFrame* vid_frame;
+    AVFrame* audio_frame;
+    Settings settings;
 }App;
 
 // global app state
@@ -37,20 +43,31 @@ void app_initialize(int argc, char** argv) {
         app_abort(1);
     }
 
-    Settings settings = {0};
-    settings_get(&settings, argc, argv);
-
+    settings_get(&g_app.settings, argc, argv);
     
-    frame_queue_init(&g_app.video_frame_queue);
-
-    frame_queue_init(&g_app.audio_frame_queue);
+    frame_queue_init(&g_app.video_frame_queue, 64);
+    frame_queue_init(&g_app.audio_frame_queue, 32);
     
-    if (player_init(&g_app.p, &g_app.video_frame_queue, &g_app.audio_frame_queue, settings.video_name) == false) {
+    if (player_init(&g_app.p, &g_app.video_frame_queue, &g_app.audio_frame_queue, g_app.settings.video_name) == false) {
+        fprintf(stderr, "ERROR::INIT::Couldn't initialize player\n");
         app_abort(1);
     }
 
+    if (g_app.settings.export_mode) {
+        if (exporter_init(&g_app.exporter, &g_app.p, g_app.settings.export_name) == false) {
+            fprintf(stderr, "ERROR::INIT::Couldn't initialize exporter\n");
+            app_abort(1);
+        }
+        g_app.p.export_mode = true;
+    }
 
-    g_app.window = SDL_CreateWindow("Filters", 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    if (g_app.settings.export_mode) {
+        g_app.window = SDL_CreateWindow("Filters", 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
+    }
+    else {
+        g_app.window = SDL_CreateWindow("Filters", 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    }
+
     if (g_app.window == NULL) {
         fprintf(stderr, "ERROR::SDL::%s\n", SDL_GetError());
         app_abort(1);
@@ -79,19 +96,61 @@ void app_initialize(int argc, char** argv) {
         return;
     }
     
-    video_renderer_init(g_app.window, &settings, g_app.p.video_decoder->width, g_app.p.video_decoder->height);
+    video_renderer_init(g_app.window, &g_app.settings, g_app.p.video_decoder->width, g_app.p.video_decoder->height);
     audio_renderer_init(g_app.p.audio_decoder->ch_layout.nb_channels, g_app.p.audio_decoder->sample_rate);
-
-    // freeing settings at the end of initialization
-    settings_free(&settings);
 }
 
-void app_run() {
+void app_run_exporter() {
+    player_thread_run(&g_app.p);
+
+    bool appRunning = true;
+
+    while (appRunning) {
+        // Video processing
+        if (g_app.vid_frame == NULL) {
+            g_app.vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
+        }
+
+        if (g_app.audio_frame == NULL) {
+            g_app.audio_frame = frame_queue_try_pop(&g_app.audio_frame_queue);
+        }
+        if (g_app.vid_frame != NULL) {
+            video_renderer_process_frame(g_app.vid_frame);
+
+            int w, h;
+            unsigned char* frame = video_renderer_get_frame(&w, &h);
+            if (frame != NULL)
+            {
+                exporter_write_frame(&g_app.exporter, frame);
+            }
+            else {
+                fprintf(stderr, "Couldn't get rendered frame\n");
+            }
+            av_frame_free(&g_app.vid_frame);
+        }
+
+        if (g_app.audio_frame != NULL) {
+            exporter_write_audio(&g_app.exporter,
+                (const uint8_t**)g_app.audio_frame->data,
+                g_app.audio_frame->nb_samples);
+
+            av_frame_free(&g_app.audio_frame);
+        }
+
+        if (SDL_GetAtomicInt(&g_app.p.quit) &&
+            g_app.vid_frame == NULL &&
+            g_app.audio_frame == NULL) {
+            appRunning = false;
+        }
+    }
+
+    player_thread_stop(&g_app.p);
+    app_abort(0);
+}
+
+void app_run_displayer() {
     player_thread_run(&g_app.p);
     
-    AVFrame* vid_frame = NULL;
-    AVFrame* audio_frame = NULL;
-
     bool appRunning = true;
     SDL_Event e;
 
@@ -105,17 +164,17 @@ void app_run() {
                 window_resize_callback(g_app.window);
                 break;
             }
-        }
+        }        
         // Video processing
-        if (vid_frame == NULL) {
-            vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
+        if (g_app.vid_frame == NULL) {
+            g_app.vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
         }
 
         AVFrame* frame_to_display = NULL;
         double audio_clock= audio_renderer_get_clock();
         
-        while (vid_frame != NULL) {
-            double pts = vid_frame->best_effort_timestamp * g_app.p.video_timebase;
+        while (g_app.vid_frame != NULL) {
+            double pts = g_app.vid_frame->best_effort_timestamp * g_app.p.video_timebase;
             if (pts > audio_clock) {
                 break;
             }
@@ -124,9 +183,9 @@ void app_run() {
                 av_frame_free(&frame_to_display);
             }
             
-            frame_to_display = vid_frame;
+            frame_to_display = g_app.vid_frame;
 
-            vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
+            g_app.vid_frame = frame_queue_try_pop(&g_app.video_frame_queue);
         }
         
         if (frame_to_display != NULL) {
@@ -136,36 +195,36 @@ void app_run() {
         
         // Audio processing        
         while (audio_renderer_get_queued_seconds() < 0.5)  {
-            audio_frame = frame_queue_try_pop(&g_app.audio_frame_queue);
+            g_app.audio_frame = frame_queue_try_pop(&g_app.audio_frame_queue);
 
-            if (audio_frame == NULL) {
+            if (g_app.audio_frame == NULL) {
                 break;
             }
-            double pts = audio_frame->best_effort_timestamp * g_app.p.audio_timebase;
+            double pts = g_app.audio_frame->best_effort_timestamp * g_app.p.audio_timebase;
             
-            audio_renderer_update(audio_frame, pts);
-            av_frame_free(&audio_frame);
+            audio_renderer_update(g_app.audio_frame, pts);
+            av_frame_free(&g_app.audio_frame);
         }
         
         video_renderer_present();
         SDL_GL_SwapWindow(g_app.window);
     }
 
-    // freeing frames when the loop done
-    if (vid_frame != NULL) { av_frame_free(&vid_frame); }
-    if (audio_frame != NULL) { av_frame_free(&audio_frame); }
-
     player_thread_stop(&g_app.p);
-
-    app_abort(0);
 }
 
 void app_abort(int status) {
+    if (g_app.settings.export_mode) {
+        exporter_close(&g_app.exporter);
+    }
+
     video_renderer_destroy();
     audio_renderer_destroy();
     player_destroy(&g_app.p);
     frame_queue_destroy(&g_app.video_frame_queue);
     frame_queue_destroy(&g_app.audio_frame_queue);
+    if (g_app.vid_frame != NULL) { av_frame_free(&g_app.vid_frame); }
+    if (g_app.audio_frame != NULL) { av_frame_free(&g_app.audio_frame); }
 
     if (g_app.sdl_gl_context != 0) {
         SDL_GL_DestroyContext(g_app.sdl_gl_context);
@@ -176,12 +235,19 @@ void app_abort(int status) {
     }
     
     SDL_Quit();
-
+    settings_free(&g_app.settings);
     exit(status);
 }
 
 int main(int argc, char **argv)
 {
     app_initialize(argc, argv);
-    app_run();
+    if (g_app.settings.export_mode) {
+        app_run_exporter();
+    }
+    else {
+        app_run_displayer();
+    }
+
+    app_abort(0);
 }

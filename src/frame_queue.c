@@ -3,11 +3,19 @@
 #include <errno.h>
 #include <time.h>
 
-void frame_queue_init(Frame_Queue* fq)
+void frame_queue_init(Frame_Queue* fq, int size)
 {
     fq->head = 0;
     fq->tail = 0;
     fq->count = 0;
+    fq->size = size;
+    fq->frames = calloc(size, sizeof(AVFrame*));
+
+    if (fq->frames == NULL) {
+        fprintf(stderr, "ERROR::FRAME_QUEUE::Coulnd't allocate memory for frames\n");
+        return;
+    }
+
     SDL_SetAtomicInt(&fq->aborted, 0);
     
     fq->mutex = SDL_CreateMutex();
@@ -33,9 +41,11 @@ void frame_queue_destroy(Frame_Queue* fq)
 
         av_frame_free(&frame);
 
-        fq->head = (fq->head + 1) % FRAME_QUEUE_COUNT;
+        fq->head = (fq->head + 1) % fq->size;
         fq->count--;
     }
+    
+    free(fq->frames);
 
     if (fq->mutex_initialized) {
         SDL_UnlockMutex(fq->mutex);
@@ -50,11 +60,26 @@ void frame_queue_destroy(Frame_Queue* fq)
     }
 }
 
+void frame_queue_clear(Frame_Queue* fq) {
+    SDL_LockMutex(fq->mutex);
+    
+    while (fq->count > 0) {
+        AVFrame* frame = fq->frames[fq->head];
+
+        av_frame_free(&frame);
+
+        fq->head = (fq->head + 1) % fq->size;
+        fq->count--;
+    }
+
+    SDL_UnlockMutex(fq->mutex);
+}
+
 void frame_queue_push(Frame_Queue* fq, AVFrame* frame)
 {
     SDL_LockMutex(fq->mutex);
 
-    while (fq->count == FRAME_QUEUE_COUNT && !SDL_GetAtomicInt(&fq->aborted))
+    while (fq->count == fq->size && !SDL_GetAtomicInt(&fq->aborted))
         SDL_WaitCondition(fq->not_full, fq->mutex);
 
     if (SDL_GetAtomicInt(&fq->aborted)) {
@@ -64,7 +89,7 @@ void frame_queue_push(Frame_Queue* fq, AVFrame* frame)
     }
 
     fq->frames[fq->tail] = frame;
-    fq->tail = (fq->tail + 1) % FRAME_QUEUE_COUNT;
+    fq->tail = (fq->tail + 1) % fq->size;
     fq->count++;
 
     SDL_SignalCondition(fq->not_empty);
@@ -82,7 +107,7 @@ AVFrame* frame_queue_try_pop(Frame_Queue* fq)
     }
 
     AVFrame* frame = fq->frames[fq->head];
-    fq->head = (fq->head + 1) % FRAME_QUEUE_COUNT;
+    fq->head = (fq->head + 1) % fq->size;
     fq->count--;
 
     SDL_SignalCondition(fq->not_full);

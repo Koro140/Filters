@@ -33,7 +33,6 @@ bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_qu
     player->audio_stream_idx = -1;
     
     SDL_SetAtomicInt(&player->quit, 0);
-
     int ret = avformat_open_input(&player->format_context, url, NULL, NULL);
     if (ret < 0) {
         print_av_error("ERROR::FILE::Couldn't open file", ret);
@@ -186,28 +185,37 @@ void player_handle_audio_packet(Player* p) {
         print_av_error("avcodec_send_packet(audio)", ret);
     } else {
         while ((ret = avcodec_receive_frame(p->audio_decoder, p->audio_frame)) == 0) {
-            AVFrame *out = av_frame_alloc();
+            if (p->export_mode) {
+                AVFrame* copy = av_frame_clone(p->audio_frame);
+                if (copy != NULL) {
+                    frame_queue_push(p->audio_queue_referenece, copy);
+                }
+                av_frame_unref(p->audio_frame);
+            }
+            else {
+                AVFrame* out = av_frame_alloc();
 
-            out->format = AV_SAMPLE_FMT_S16;
-            out->sample_rate = p->audio_frame->sample_rate;
-            out->ch_layout = p->audio_frame->ch_layout;
-            out->nb_samples = p->audio_frame->nb_samples;
+                out->format = AV_SAMPLE_FMT_S16;
+                out->sample_rate = p->audio_frame->sample_rate;
+                out->ch_layout = p->audio_frame->ch_layout;
+                out->nb_samples = p->audio_frame->nb_samples;
 
-            out->pts = p->audio_frame->pts;
-            out->best_effort_timestamp = p->audio_frame->best_effort_timestamp;
+                out->pts = p->audio_frame->pts;
+                out->best_effort_timestamp = p->audio_frame->best_effort_timestamp;
 
-            av_frame_get_buffer(out, 0);
+                av_frame_get_buffer(out, 0);
 
-            swr_convert(
-                p->swr,
-                out->data,
-                out->nb_samples,
-                (const uint8_t **)p->audio_frame->data,
-                p->audio_frame->nb_samples
-            );
+                swr_convert(
+                    p->swr,
+                    out->data,
+                    out->nb_samples,
+                    (const uint8_t**)p->audio_frame->data,
+                    p->audio_frame->nb_samples
+                );
 
-            av_frame_unref(p->audio_frame);
-            frame_queue_push(p->audio_queue_referenece, out);
+                av_frame_unref(p->audio_frame);
+                frame_queue_push(p->audio_queue_referenece, out);
+            }
         }
         if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
             print_av_error("avcodec_receive_frame(audio)", ret);

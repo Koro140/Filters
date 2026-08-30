@@ -39,6 +39,7 @@ void settings_get(Settings* settings, int argc, char** argv) {
     settings->filter_types_array = dynamic_arr_init(sizeof(FilterType), 8);
 
     flag_str_var(&settings->video_name, "V", "", "Video name");
+    flag_str_var(&settings->export_name, "E", "", "Export name");
     flag_bool_var(&help, "help", false, "How to use this app");
     flag_list_var(&filter_flag_list, "F", "Filters list to apply in sequential order");
 
@@ -65,6 +66,11 @@ void settings_get(Settings* settings, int argc, char** argv) {
         exit(1);
     }
     
+    if (strlen(settings->export_name) > 0)
+    {
+        settings->export_mode = true;
+    }
+
     // Doing the filters type parsing
     for (size_t i = 0; i < filter_flag_list.count; i++) {
         FilterType t;

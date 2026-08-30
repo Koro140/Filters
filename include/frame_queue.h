@@ -7,11 +7,11 @@
 #define FRAME_QUEUE_COUNT 32
 
 typedef struct Frame_Queue {
-    AVFrame* frames[FRAME_QUEUE_COUNT];
+    AVFrame** frames;
     int head;
     int tail;
     int count;
-
+    int size;
     SDL_Mutex* mutex;
     SDL_Condition* not_empty;
     SDL_Condition* not_full;
@@ -23,8 +23,9 @@ typedef struct Frame_Queue {
     SDL_AtomicInt aborted;
 } Frame_Queue;
 
-void frame_queue_init(Frame_Queue* fq);
+void frame_queue_init(Frame_Queue* fq, int size);
 void frame_queue_destroy(Frame_Queue* fq);
+void frame_queue_clear(Frame_Queue* fq);
 void frame_queue_push(Frame_Queue* fq, AVFrame* frame);
 AVFrame* frame_queue_try_pop(Frame_Queue* fq);
 

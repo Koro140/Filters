@@ -37,6 +37,8 @@ typedef struct Player {
   
   SDL_AtomicInt quit;
   SDL_Thread*   thread;
+
+  bool export_mode;
 }Player;
 
 bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url);

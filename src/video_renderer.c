@@ -103,6 +103,11 @@ int filter_shaders_count = 0;
 Render_Target rt1 = {0};
 Render_Target rt2 = {0};
 
+// buffer to export frames
+static unsigned char* frame_buffer = NULL;
+static int frame_buffer_width = 0;
+static int frame_buffer_height = 0;
+
 bool rt1_as_input = true;
 
 const float quad[] = {
@@ -351,4 +356,30 @@ void video_renderer_present() {
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
+}
+
+const unsigned char* video_renderer_get_frame(int* out_width, int* out_height) {
+    Render_Target* current = rt1_as_input ? &rt1 : &rt2;
+
+    if (frame_buffer == NULL || current->width != frame_buffer_width || current->height != frame_buffer_height) {
+        size_t buffer_size = (size_t)current->width * current->height * 3;
+        unsigned char* new_buffer = realloc(frame_buffer, buffer_size);
+        if (new_buffer == NULL) {
+            fprintf(stderr, "ERROR::VIDEO::Couldn't allocate memory for video frame\n");
+            return NULL;
+        }
+        frame_buffer = new_buffer;
+        frame_buffer_width = current->width;
+        frame_buffer_height = current->height;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, current->framebuffer);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(0, 0, current->width, current->height, GL_RGB, GL_UNSIGNED_BYTE, frame_buffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    if (out_width)  *out_width = current->width;
+    if (out_height) *out_height = current->height;
+
+    return frame_buffer;
 }

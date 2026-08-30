@@ -60,6 +60,11 @@ double audio_renderer_get_queued_seconds() {
     return (double)queued / (2.0 * g_aud_renderer.channels * g_aud_renderer.frequency);
 }
 
+void audio_renderer_flush()
+{
+    SDL_FlushAudioStream(g_aud_renderer.audio_stream);
+}
+
 void audio_renderer_destroy() {
     if (g_aud_renderer.audio_stream != NULL) {
         SDL_DestroyAudioStream(g_aud_renderer.audio_stream);
