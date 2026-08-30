@@ -118,7 +118,7 @@ void app_run_exporter() {
             video_renderer_process_frame(g_app.vid_frame);
 
             int w, h;
-            unsigned char* frame = video_renderer_get_frame(&w, &h);
+            unsigned char* frame = (unsigned char*)video_renderer_get_frame(&w, &h);
             if (frame != NULL)
             {
                 exporter_write_frame(&g_app.exporter, frame);

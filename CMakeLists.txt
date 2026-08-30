@@ -37,6 +37,7 @@ add_executable(filters
     src/audio_renderer.c
     src/settings.c
     src/filters.c
+    src/exporter.c
 )
 add_dependencies(filters run_python_script)
 

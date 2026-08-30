@@ -22,5 +22,5 @@ typedef struct Settings {
     bool export_mode;
 }Settings;
 
-void settigs_get(Settings* settings, int argc, char** argv);
+void settings_get(Settings* settings, int argc, char** argv);
 void settings_free(Settings* settings);

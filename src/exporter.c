@@ -165,7 +165,7 @@ void exporter_write_frame(Exporter* exporter, unsigned char* rgb_buffer) {
 
     // Flip vertically: glReadPixels gives bottom-up rows, sws_scale wants top-down.
     // Feed it the last row first with a negative stride to flip during conversion.
-    uint8_t* src_data[1] = { rgb_buffer + (exporter->video_codec_ctx->height - 1) * stride };
+    const uint8_t* src_data[1] = { rgb_buffer + (exporter->video_codec_ctx->height - 1) * stride };
     int      src_linesize[1] = { -stride };
 
     sws_scale(exporter->sws_ctx, src_data, src_linesize, 0, exporter->video_codec_ctx->height,
