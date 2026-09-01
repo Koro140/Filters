@@ -15,18 +15,19 @@ void supported_filters(FILE* stream) {
     fprintf(stream, "\tbnw      --- Black and white filter\n");
     fprintf(stream, "\tblur     --- Blurry effect\n");
     fprintf(stream, "\tglitch   --- Glitchy effect\n");
-    fprintf(stream, "\tchroma   --- Chromatic Abbaration effect\n");
+    fprintf(stream, "\tchroma   --- Chromatic Aberration effect\n");
     fprintf(stream, "\tscanline --- Old CRT TV lines effect\n");
     fprintf(stream, "\tfilm     --- Film grain effect\n");
     fprintf(stream, "\tvignette --- Vignette effect\n");
     fprintf(stream, "\tpixel    --- Pixelation effect\n");
-    fprintf(stream, "\evil      --- Negative colors effect\n");
+    fprintf(stream, "\tevil     --- Negative colors effect\n");
 }
 
 void usage(FILE *stream)
 {
     fprintf(stream, "Usage: ./filters -V [VIDEO_NAME]\n");
     fprintf(stream, "Usage: ./filters -V [VIDEO_NAME] -F [FILTER] -F [FILTER] .....\n");
+    fprintf(stream, "Usage: ./filters -V [VIDEO_NAME] -F [FILTER] -E [EXPORT_NAME] .....\n");
     fprintf(stream, "OPTIONS:\n");
     flag_print_options(stream);
 
@@ -39,7 +40,7 @@ void settings_get(Settings* settings, int argc, char** argv) {
     settings->filter_types_array = dynamic_arr_init(sizeof(FilterType), 8);
 
     flag_str_var(&settings->video_name, "V", "", "Video name");
-    flag_str_var(&settings->export_name, "E", "", "Export name");
+    flag_str_var(&settings->export_name, "E", "", "Export the video with filters");
     flag_bool_var(&help, "help", false, "How to use this app");
     flag_list_var(&filter_flag_list, "F", "Filters list to apply in sequential order");
 

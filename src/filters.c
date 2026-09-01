@@ -242,7 +242,7 @@ const char* pixel_src = "#version 330 core\n"
 "}\n"
 ;
 
-const char* evil_src = "#version 33 core\n"
+const char* evil_src = "#version 330 core\n"
 "\n"
 "in vec2 TexCoord;\n"
 "out vec4 FragColor;\n"

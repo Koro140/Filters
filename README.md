@@ -1,5 +1,5 @@
 # Filters
-- it allows you to play videos and select one of many filters/effects to apply to the video and code custome filters
+- it allows you to play videos and select one of many filters/effects to apply to the video and code custom filters
 - it is a project to learn shaders and how to apply them in a pipeline
 
 ## How To Install
@@ -34,9 +34,9 @@ when you run
 ```
 you can stack filters on top of each other for example you if you apply 
 ```console
-./filters -V [VIDEO_NAME] -F vhs -F blur
+./filters -V [VIDEO_NAME] -F bnw -F chroma
 ```
-then the vhs lines will be blurred .. they will be clear if applied in reverse order
+then the chromatic a lines will be blurred .. they will be clear if applied in reverse order
 
 and if you do
 ```console
@@ -46,9 +46,15 @@ then the vhs edges will be colored .. they will be b&w if applied in reverse ord
 
 ### Supported Filter
 ```console
-- bnw    ----- black and white
-- vhs    ----- Old VHS effect
-- blur   ----- Blurry effect
-- glitch ----- Glitching effect
+- bnw      --- black and white
+- vhs      --- Old VHS effect
+- blur     --- Blurry effect
+- glitch   --- Glitching effect
+- chroma   --- Chromatic Aberration effect
+- scanline --- Old CRT TV lines effect
+- film     --- Film grain effect
+- vignette --- Vignette effect
+- pixel    --- Pixelation effect
+- evil     --- Negative colors effect
 ```
 hoping to add more ;)

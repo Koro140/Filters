@@ -2,14 +2,9 @@
 
 #include <stdio.h>
 
-bool player_init(Player *player, Frame_Queue* video_queue, Frame_Queue* audio_queue, const char *url);
-void player_destroy(Player* p);
 static void player_update(Player* p);
 static void player_handle_video_packet(Player* p);
 static void player_handle_audio_packet(Player* p);
-
-void player_thread_run(Player* p);
-void player_thread_stop(Player* p);
 
 static void print_av_error(const char *context, int err) {
     char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
