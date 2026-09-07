@@ -58,5 +58,6 @@ then the vhs edges will be colored .. they will be b&w if applied in reverse ord
 - vignette --- Vignette effect
 - pixel    --- Pixelation effect
 - evil     --- Negative colors effect
+- fish     --- Fisheye effect
 ```
 hoping to add more ;)
