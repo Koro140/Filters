@@ -12,7 +12,8 @@ typedef enum FilterType{
     FILTER_TYPE_FILM_GRAIN,
     FILTER_TYPE_VIGNETTE,
     FILTER_TYPE_PIXEL,
-    FILTER_TYPE_EVIL
+    FILTER_TYPE_EVIL,
+    FILTER_TYPE_FISH
 }FilterType;
 
 typedef struct Settings {

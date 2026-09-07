@@ -135,6 +135,7 @@ extern const char* film_grain_src;
 extern const char* vignette_src;
 extern const char* pixel_src;
 extern const char* evil_src;
+extern const char* fish_src;
 
 void render_target_create(Render_Target* rt,int width, int height) {
     rt->width = width;
@@ -218,6 +219,9 @@ void video_renderer_init(SDL_Window* window ,Settings* settings, int width, int 
             break;
         case FILTER_TYPE_EVIL:
             filters_shaders[i] = shader_compile(filter_vertex_src, evil_src, NULL);
+            break;
+        case FILTER_TYPE_FISH:
+            filters_shaders[i] = shader_compile(filter_vertex_src, fish_src, NULL);
             break;
         }
     }

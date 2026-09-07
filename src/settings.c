@@ -21,6 +21,7 @@ void supported_filters(FILE* stream) {
     fprintf(stream, "\tvignette --- Vignette effect\n");
     fprintf(stream, "\tpixel    --- Pixelation effect\n");
     fprintf(stream, "\tevil     --- Negative colors effect\n");
+    fprintf(stream, "\tfish     --- Fisheye effect\n");
 }
 
 void usage(FILE *stream)
@@ -95,6 +96,8 @@ void settings_get(Settings* settings, int argc, char** argv) {
             t = FILTER_TYPE_PIXEL;
         } else if (strcmp(filter_flag_list.items[i], "evil") == 0) {
             t = FILTER_TYPE_EVIL;
+        } else if (strcmp(filter_flag_list.items[i], "fish") == 0) {
+            t = FILTER_TYPE_FISH;
         } else {
             supported_filters(stderr);
             settings_free(settings);

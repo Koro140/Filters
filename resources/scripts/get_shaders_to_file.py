@@ -9,6 +9,7 @@ files_to_vars = [
     ["vignette.glsl", "vignette_src"],
     ["pixel.glsl", "pixel_src"],
     ["evil.glsl", "evil_src"],
+    ["fish.glsl", "fish_src"],
 ]
 
 path = "../shaders/"

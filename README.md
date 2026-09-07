@@ -1,4 +1,6 @@
 # Filters
+![](./demo.gif)
+
 - it allows you to play videos and select one of many filters/effects to apply to the video and code custom filters
 - it is a project to learn shaders and how to apply them in a pipeline
 
