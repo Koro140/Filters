@@ -38,13 +38,7 @@ you can stack filters on top of each other for example you if you apply
 ```console
 ./filters -V [VIDEO_NAME] -F bnw -F chroma
 ```
-then the chromatic a lines will be blurred .. they will be clear if applied in reverse order
-
-and if you do
-```console
-./filters -V [VIDEO_NAME] -F bnw -F vhs
-```
-then the vhs edges will be colored .. they will be b&w if applied in reverse order you get the idea
+then the chromatic lines will be black and white .. they will be colored if applied in reverse order
 
 ### Supported Filter
 ```console
